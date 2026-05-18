@@ -1,13 +1,16 @@
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { TripForm, TripFormData } from "../planner/TripForm"
+import { TripForm } from "../planner/TripForm"
+import type { TripFormData } from "../planner/TripForm"
 import { LivePreview } from "../planner/LivePreview"
-import { TripTimeline, Stop } from "../planner/TripTimeline"
-import { ComplianceStatus, RuleStatus } from "../planner/ComplianceStatus"
-import { SmartInsights, Insight } from "../planner/SmartInsights"
+import { TripTimeline } from "../planner/TripTimeline"
+import type { Stop } from "../planner/TripTimeline"
+import { ComplianceStatus } from "../planner/ComplianceStatus"
+import type { RuleStatus } from "../planner/ComplianceStatus"
+import { SmartInsights } from "../planner/SmartInsights"
+import type { Insight } from "../planner/SmartInsights"
 import { Card, CardContent } from "../ui/card"
 import { Badge } from "../ui/badge"
-import { ShieldCheck, Route, FileSpreadsheet, PlayCircle } from "lucide-react"
+import { ShieldCheck, Route, FileSpreadsheet, PlayCircle, ArrowLeft } from "lucide-react"
 
 // Mock calculated stops based on full trip generation
 const initialStops: Stop[] = [
@@ -43,7 +46,6 @@ export function TripPlanner({ onNavigateHome }: TripPlannerProps) {
   const [stops, setStops] = useState<Stop[]>(initialStops)
   const [rules, setRules] = useState<RuleStatus[]>(initialRules)
   const [insights, setInsights] = useState<Insight[]>(initialInsights)
-  const [isCalculated, setIsCalculated] = useState(false)
 
   // Triggered when form fields change in real-time
   const handleFormChange = (data: TripFormData) => {
@@ -52,8 +54,6 @@ export function TripPlanner({ onNavigateHome }: TripPlannerProps) {
 
   // Triggered on form submit click (Generate Plan)
   const handleFormSubmit = (data: TripFormData) => {
-    setIsCalculated(true)
-    
     // Simulate updating route preview data based on fields
     const updatedStops: Stop[] = [
       { name: data.currentLocation || "Origin", type: "start", mile: 0 },
@@ -89,6 +89,13 @@ export function TripPlanner({ onNavigateHome }: TripPlannerProps) {
       
       <div className="container relative mx-auto px-4 md:px-6 space-y-12">
         
+        {/* Navigation back button */}
+        <div>
+          <button onClick={onNavigateHome} className="text-sm font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer dark:text-slate-400 dark:hover:text-slate-200 focus:outline-none">
+            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+          </button>
+        </div>
+
         {/* Planner Hero Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-[700px]">
