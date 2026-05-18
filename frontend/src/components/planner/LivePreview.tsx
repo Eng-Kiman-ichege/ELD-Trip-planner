@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Clock, Fuel, ShieldAlert, Navigation, Calendar } from "lucide-react"
+import { RouteMap } from "../shared/RouteMap"
 
 interface LivePreviewProps {
   formData: {
@@ -102,7 +103,7 @@ export function LivePreview({ formData }: LivePreviewProps) {
               <p className="text-xs text-slate-500 font-semibold mt-1">Live map preview will generate automatically</p>
             </div>
           )}
-        </div>v>
+        </div>
 
         {/* Animated Metrics */}
         <div className="grid grid-cols-2 gap-4">
