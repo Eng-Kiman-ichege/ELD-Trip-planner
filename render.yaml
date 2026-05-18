@@ -2,7 +2,7 @@ services:
   - type: web
     name: eld-backend
     runtime: python
-    rootDirectory: Backend
+    rootDir: Backend
     buildCommand: "./build.sh"
     startCommand: "gunicorn back.wsgi:application"
     envVars:
