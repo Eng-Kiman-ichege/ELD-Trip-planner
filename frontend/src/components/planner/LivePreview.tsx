@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Clock, Fuel, ShieldAlert, Navigation, Calendar } from "lucide-react"
 import { RouteMap } from "../shared/RouteMap"
+import type { StopCoordinate } from "../shared/RouteMap"
+
 
 interface LivePreviewProps {
   formData: {
@@ -23,41 +26,176 @@ interface LivePreviewProps {
   };
 }
 
+const HUBS: Record<string, [number, number]> = {
+  "dallas": [32.7767, -96.7970],
+  "houston": [29.7604, -95.3698],
+  "miami": [25.7617, -80.1918],
+  "atlanta": [33.7490, -84.3880],
+  "chicago": [41.8781, -87.6298],
+  "orlando": [28.5384, -81.3789],
+  "new york": [40.7128, -74.0060],
+  "los angeles": [34.0522, -118.2437],
+  "seattle": [47.6062, -122.3321],
+  "denver": [39.7392, -104.9903],
+  "birmingham": [33.5186, -86.8104],
+}
+
 export function LivePreview({ formData }: LivePreviewProps) {
-  // Simple calculated metrics based on mocked route logic
-  const hasRoute = formData.pickupLocation || formData.dropoffLocation;
-  
-  // Custom mock distances based on typical route text
-  const getRouteMetrics = () => {
-    if (!hasRoute) return { distance: 0, hours: 0, fuelNeeded: 0, rests: 0, stops: 0 };
-    
-    let baseDistance = 350; // default
-    const text = `${formData.currentLocation} ${formData.pickupLocation} ${formData.dropoffLocation}`.toLowerCase();
-    
-    if (text.includes("dallas") && text.includes("houston")) {
-      baseDistance = 240;
-    } else if (text.includes("dallas") && text.includes("miami")) {
-      baseDistance = 1300;
-    } else if (text.includes("houston") && text.includes("miami")) {
-      baseDistance = 1180;
-    } else if (text.includes("atlanta") && text.includes("orlando")) {
-      baseDistance = 440;
+  const [mapPath, setMapPath] = useState<[number, number][]>([])
+  const [mapStops, setMapStops] = useState<StopCoordinate[]>([])
+
+  const [distance, setDistance] = useState<number>(0)
+  const [hours, setHours] = useState<number>(0)
+  const [fuelNeeded, setFuelNeeded] = useState<number>(0)
+  const [stopsCount, setStopsCount] = useState<number>(0)
+
+  // Debounced geocoding effect for dynamic OpenStreetMap updates
+  useEffect(() => {
+    if (!formData.pickupLocation || !formData.dropoffLocation) {
+      setMapPath([]);
+      setMapStops([]);
+      setDistance(0);
+      setHours(0);
+      setFuelNeeded(0);
+      setStopsCount(0);
+      return;
     }
 
-    const hours = Math.round((baseDistance / 55) * 10) / 10; // average truck speed ~55mph
-    const mpg = formData.mpgEstimate || 6.5;
-    const fuelNeeded = Math.round(baseDistance / mpg);
-    const stops = formData.optimizeFuel ? Math.ceil(fuelNeeded / (formData.fuelCapacity * 0.8 || 120)) : 1;
-    const rests = formData.includeOvernight ? Math.ceil(hours / 11) : 0;
+    const timer = setTimeout(async () => {
+      let c1: [number, number] | null = null;
+      let c2: [number, number] | null = null;
+      let c3: [number, number] | null = null;
 
-    return { distance: baseDistance, hours, fuelNeeded, rests, stops };
-  };
+      const resolveCoords = async (loc: string) => {
+        if (!loc) return null;
+        const clean = loc.toLowerCase().trim();
+        const matched = Object.keys(HUBS).find(k => clean.includes(k));
+        if (matched) return HUBS[matched];
 
-  const metrics = getRouteMetrics();
-  const cycleRemaining = Math.max(0, 70 - formData.currentCycleUsed - metrics.hours);
-  const remainingToday = Math.max(0, 11 - formData.currentDrivingHoursToday);
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(loc)}`);
+          const data = await res.json();
+          if (data && data[0]) {
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+          }
+        } catch (e) {
+          console.error("OSM geocode lookup failed in LivePreview", e);
+        }
+        return null;
+      };
+
+      // Resolve all 3 locations
+      if (formData.currentLocation) {
+        c1 = await resolveCoords(formData.currentLocation);
+      }
+      c2 = await resolveCoords(formData.pickupLocation);
+      c3 = await resolveCoords(formData.dropoffLocation);
+
+      if (c2 && c3) {
+        // Haversine distance formula with winding/highway scale
+        const getDistance = (coords1: [number, number], coords2: [number, number]) => {
+          const R = 3958.8; // miles
+          const dLat = (coords2[0] - coords1[0]) * Math.PI / 180;
+          const dLon = (coords2[1] - coords1[1]) * Math.PI / 180;
+          const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(coords1[0] * Math.PI / 180) * Math.cos(coords2[0] * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c * 1.18; // 18% highway winding factor
+        };
+
+        const distPrimary = getDistance(c2, c3);
+        const hoursPrimary = distPrimary / 58.0; // matching backend truck speed
+
+        let totalDist = distPrimary;
+        let totalHrs = hoursPrimary + 1.0; // 1.0 hr pickup loading
+
+        const previewStops: StopCoordinate[] = [];
+
+        // If currentLocation is resolved and different from pickupLocation
+        if (c1 && (Math.abs(c1[0] - c2[0]) > 0.05 || Math.abs(c1[1] - c2[1]) > 0.05)) {
+          const distTransit = getDistance(c1, c2);
+          const hoursTransit = distTransit / 58.0;
+
+          totalDist = distTransit + distPrimary;
+          totalHrs = hoursTransit + hoursPrimary + 1.5; // +30m inspection, +1h loading
+
+          previewStops.push({
+            id: "preview-current",
+            name: formData.currentLocation,
+            type: "pickup",
+            coords: c1,
+            time: "Start",
+            details: "Dispatch Location"
+          });
+        }
+
+        previewStops.push(
+          {
+            id: "preview-pickup",
+            name: formData.pickupLocation,
+            type: "pickup",
+            coords: c2,
+            time: "Departure",
+            details: "Origin Loading Point"
+          },
+          {
+            id: "preview-dropoff",
+            name: formData.dropoffLocation,
+            type: "dropoff",
+            coords: c3,
+            time: "Arrival",
+            details: "Destination Unloading Point"
+          }
+        );
+
+        // Build curved polyline path spanning all points
+        const buildCurvedPath = (pA: [number, number], pB: [number, number], steps = 15) => {
+          const path: [number, number][] = [];
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const offset = 0.15 * Math.sin(t * Math.PI);
+            const lat = pA[0] + (pB[0] - pA[0]) * t + offset * (pB[1] - pA[1]) * 0.12;
+            const lon = pA[1] + (pB[1] - pA[1]) * t - offset * (pB[0] - pA[0]) * 0.12;
+            path.push([lat, lon]);
+          }
+          return path;
+        };
+
+        let combinedPath: [number, number][] = [];
+        if (c1 && (Math.abs(c1[0] - c2[0]) > 0.05 || Math.abs(c1[1] - c2[1]) > 0.05)) {
+          combinedPath = buildCurvedPath(c1, c2).concat(buildCurvedPath(c2, c3));
+        } else {
+          combinedPath = buildCurvedPath(c2, c3);
+        }
+
+        setMapPath(combinedPath);
+        setMapStops(previewStops);
+
+        const roundedDist = Math.round(totalDist);
+        const roundedHrs = Math.round(totalHrs * 10) / 10;
+        const mpg = formData.mpgEstimate || 6.5;
+        const fuelNeededGals = Math.round(totalDist / mpg);
+        const fuelStops = formData.optimizeFuel ? Math.ceil(fuelNeededGals / (formData.fuelCapacity * 0.8 || 120)) : 1;
+
+        setDistance(roundedDist);
+        setHours(roundedHrs);
+        setFuelNeeded(fuelNeededGals);
+        setStopsCount(fuelStops);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [formData.currentLocation, formData.pickupLocation, formData.dropoffLocation, formData.mpgEstimate, formData.optimizeFuel, formData.fuelCapacity]);
+
+  const hasRoute = !!(formData.pickupLocation && formData.dropoffLocation);
   
-  const isViolation = metrics.hours > remainingToday && !formData.autoHOS;
+  const totalDrivingToday = Number((formData.currentDrivingHoursToday + hours).toFixed(1));
+  const totalOnDutyToday = Number((formData.currentOnDutyHoursToday + hours + (hasRoute ? 1.5 : 0)).toFixed(1));
+  const cycleRemaining = Math.max(0, Number((70 - formData.currentCycleUsed - hours).toFixed(1)));
+  
+  const isViolation = (totalDrivingToday > 11 || totalOnDutyToday > 14) && !formData.autoHOS;
   const isWarning = cycleRemaining < 10;
   
   let riskStatus = "Low";
@@ -87,12 +225,19 @@ export function LivePreview({ formData }: LivePreviewProps) {
       </CardHeader>
       
       <CardContent className="p-6 space-y-6">
-        {/* Route Details Map Mockup */}
-        <div className="relative h-48 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/30">
-          {hasRoute ? (
+        {/* Route Details Map Preview */}
+        <div className="relative h-96 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/30 shadow-inner">
+          {hasRoute && mapPath.length > 0 ? (
             <div className="h-full w-full relative">
-              <RouteMap height="100%" zoomLevel={4} />
-              <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm p-2 rounded-lg text-xs font-bold shadow border border-slate-200/20 z-20">
+              <RouteMap 
+                height="100%" 
+                zoomLevel={4} 
+                coordinates={mapPath} 
+                stops={mapStops}
+                distance={distance}
+                duration={hours}
+              />
+              <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm p-2 rounded-lg text-xs font-bold shadow border border-slate-200/20 z-20 text-slate-800 dark:text-slate-100">
                 <span className="text-slate-500">Route active:</span> {formData.pickupLocation || "Origin"} → {formData.dropoffLocation || "Destination"}
               </div>
             </div>
@@ -112,7 +257,7 @@ export function LivePreview({ formData }: LivePreviewProps) {
               <Clock className="h-4 w-4 text-blue-500" />
               <span className="text-xs font-bold uppercase tracking-wider">Drive Duration</span>
             </div>
-            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{metrics.hours} hrs</p>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{hours} hrs</p>
             <p className="text-[10px] text-slate-400">At avg 55 mph</p>
           </div>
 
@@ -121,7 +266,7 @@ export function LivePreview({ formData }: LivePreviewProps) {
               <Navigation className="h-4 w-4 text-emerald-500" />
               <span className="text-xs font-bold uppercase tracking-wider">Distance</span>
             </div>
-            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{metrics.distance} mi</p>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{distance} mi</p>
             <p className="text-[10px] text-slate-400">Total route mileage</p>
           </div>
 
@@ -130,8 +275,8 @@ export function LivePreview({ formData }: LivePreviewProps) {
               <Fuel className="h-4 w-4 text-amber-500" />
               <span className="text-xs font-bold uppercase tracking-wider">Fuel Stop Count</span>
             </div>
-            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{metrics.stops} Stops</p>
-            <p className="text-[10px] text-slate-400">Estimated ~{metrics.fuelNeeded} gal</p>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{stopsCount} Stops</p>
+            <p className="text-[10px] text-slate-400">Estimated ~{fuelNeeded} gal</p>
           </div>
 
           <div className="p-4 border border-slate-200/40 rounded-xl bg-slate-50/50 dark:border-slate-800/40 dark:bg-slate-900/30">
@@ -151,16 +296,16 @@ export function LivePreview({ formData }: LivePreviewProps) {
           <div>
             <div className="flex justify-between items-center text-xs font-bold mb-1.5">
               <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">Daily Driving HOS Buffer</span>
-              <span className={formData.currentDrivingHoursToday >= 11 ? "text-red-500" : "text-slate-800 dark:text-slate-200"}>
-                {formData.currentDrivingHoursToday} / 11 hrs limit
+              <span className={totalDrivingToday >= 11 ? "text-red-500" : "text-slate-800 dark:text-slate-200"}>
+                {totalDrivingToday} / 11 hrs limit
               </span>
             </div>
             <div className="w-full bg-slate-100 dark:bg-slate-850 h-2.5 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
-                  formData.currentDrivingHoursToday >= 11 ? "bg-red-500" : formData.currentDrivingHoursToday >= 9 ? "bg-amber-500" : "bg-blue-600"
+                  totalDrivingToday >= 11 ? "bg-red-500" : totalDrivingToday >= 9 ? "bg-amber-500" : "bg-blue-600"
                 }`}
-                style={{ width: `${Math.min(100, (formData.currentDrivingHoursToday / 11) * 100)}%` }}
+                style={{ width: `${Math.min(100, (totalDrivingToday / 11) * 100)}%` }}
               ></div>
             </div>
           </div>
@@ -168,16 +313,16 @@ export function LivePreview({ formData }: LivePreviewProps) {
           <div>
             <div className="flex justify-between items-center text-xs font-bold mb-1.5">
               <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">Daily On-Duty HOS Buffer</span>
-              <span className={formData.currentOnDutyHoursToday >= 14 ? "text-red-500" : "text-slate-800 dark:text-slate-200"}>
-                {formData.currentOnDutyHoursToday} / 14 hrs window
+              <span className={totalOnDutyToday >= 14 ? "text-red-500" : "text-slate-800 dark:text-slate-200"}>
+                {totalOnDutyToday} / 14 hrs window
               </span>
             </div>
             <div className="w-full bg-slate-100 dark:bg-slate-850 h-2.5 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
-                  formData.currentOnDutyHoursToday >= 14 ? "bg-red-500" : formData.currentOnDutyHoursToday >= 12 ? "bg-amber-500" : "bg-blue-600"
+                  totalOnDutyToday >= 14 ? "bg-red-500" : totalOnDutyToday >= 12 ? "bg-amber-500" : "bg-blue-600"
                 }`}
-                style={{ width: `${Math.min(100, (formData.currentOnDutyHoursToday / 14) * 100)}%` }}
+                style={{ width: `${Math.min(100, (totalOnDutyToday / 14) * 100)}%` }}
               ></div>
             </div>
           </div>
@@ -190,7 +335,7 @@ export function LivePreview({ formData }: LivePreviewProps) {
             <p className="text-slate-400 text-xs uppercase tracking-wider font-bold">Estimated Arrival (ETA)</p>
             <p className="text-slate-800 dark:text-slate-200">
               {formData.startDate ? `${formData.startDate} at ` : "Today at "}
-              {formData.startTime || "08:00 AM"} (+{metrics.hours} hrs route duration)
+              {formData.startTime || "08:00 AM"} (+{hours} hrs route duration)
             </p>
           </div>
         </div>

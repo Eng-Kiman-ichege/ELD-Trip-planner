@@ -4,7 +4,7 @@ from trips.models import Trip
 class AnalyticsService:
     @staticmethod
     def get_user_analytics(user):
-        user_trips = Trip.objects.filter(user=user)
+        user_trips = Trip.objects.all()
         total_trips = user_trips.count()
 
         if total_trips == 0:

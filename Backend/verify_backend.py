@@ -109,6 +109,33 @@ def run_verification():
         route_geometry=route["route_geometry"]
     )
     
+    # Save Stops for seed trip
+    for s in schedule["stops"]:
+        Stop.objects.create(
+            trip=trip,
+            stop_type=s["stop_type"],
+            location_name=s["location_name"],
+            latitude=s["latitude"],
+            longitude=s["longitude"],
+            arrival_time=s["arrival_time"],
+            departure_time=s["departure_time"],
+            duration_minutes=s["duration_minutes"],
+            fuel_required=s["fuel_required"],
+            notes=s["notes"]
+        )
+
+    # Save DriverLogs for seed trip
+    for day_log in daily_logs:
+        for segment in day_log["segments"]:
+            DriverLog.objects.create(
+                trip=trip,
+                day_number=day_log["day_number"],
+                duty_status=segment["duty_status"],
+                start_time=segment["start_dt"],
+                end_time=segment["end_dt"],
+                duration_minutes=segment["duration_minutes"]
+            )
+    
     analytics = AnalyticsService.get_user_analytics(user)
     print(f" -> Aggregated operations stats:")
     print(f"    - Total Planned Trips: {analytics['total_trips']}")

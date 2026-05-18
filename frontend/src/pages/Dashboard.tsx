@@ -10,7 +10,7 @@ import {
   CartesianGrid, LineChart, Line 
 } from "recharts"
 import { 
-  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar, PlusCircle, Loader2 
+  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar, PlusCircle, Loader2, Trash2 
 } from "lucide-react"
 
 export function Dashboard() {
@@ -19,25 +19,40 @@ export function Dashboard() {
   const [trips, setTrips] = useState<any[]>([])
   const [analytics, setAnalytics] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [selectedTripId, setSelectedTripId] = useState<number | null>(null)
+  const [isDeletingId, setIsDeletingId] = useState<number | null>(null)
+
+  async function fetchMetrics(showLoader = false) {
+    try {
+      if (showLoader) setIsLoading(true)
+      const [tripsData, analyticsData] = await Promise.all([
+        api.trips.list(),
+        api.dashboard.getAnalytics()
+      ])
+      setTrips(tripsData)
+      setAnalytics(analyticsData)
+      
+      if (tripsData.length > 0) {
+        // If there's no selected trip, or if the currently selected trip is no longer in the list
+        setSelectedTripId(prev => {
+          if (prev && tripsData.some((t: any) => t.id === prev)) {
+            return prev
+          }
+          return tripsData[0].id
+        })
+      } else {
+        setSelectedTripId(null)
+      }
+    } catch (err: any) {
+      console.error("Dashboard hydration error:", err)
+      setError("Failed to load control center metrics from server. Ensure your backend is running.")
+    } finally {
+      if (showLoader) setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setIsLoading(true)
-        const [tripsData, analyticsData] = await Promise.all([
-          api.trips.list(),
-          api.dashboard.getAnalytics()
-        ])
-        setTrips(tripsData)
-        setAnalytics(analyticsData)
-      } catch (err: any) {
-        console.error("Dashboard hydration error:", err)
-        setError("Failed to load control center metrics from server. Ensure your backend is running.")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchData()
+    fetchMetrics(true)
   }, [])
 
   // Dynamic charts data generation

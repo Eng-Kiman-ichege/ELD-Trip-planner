@@ -56,14 +56,14 @@ export const tripSchema = z.object({
 export type TripFormData = z.infer<typeof tripSchema>
 
 const defaultValues: TripFormData = {
-  currentLocation: "Dallas, TX",
-  pickupLocation: "Houston, TX",
-  dropoffLocation: "Miami, FL",
-  currentCycleUsed: 22,
-  currentDrivingHoursToday: 4,
-  currentOnDutyHoursToday: 5,
-  truckNumber: "ELD-902",
-  trailerNumber: "TR-5542",
+  currentLocation: "",
+  pickupLocation: "",
+  dropoffLocation: "",
+  currentCycleUsed: 0,
+  currentDrivingHoursToday: 0,
+  currentOnDutyHoursToday: 0,
+  truckNumber: "",
+  trailerNumber: "",
   fuelCapacity: 150,
   mpgEstimate: 6.5,
   optimizeFuel: true,
@@ -73,7 +73,7 @@ const defaultValues: TripFormData = {
   autoHOS: true,
   startDate: new Date().toISOString().split('T')[0],
   startTime: "08:00",
-  pickupTime: "10:00",
+  pickupTime: "",
 }
 
 interface TripFormProps {
@@ -81,15 +81,31 @@ interface TripFormProps {
   onChange: (data: TripFormData) => void;
 }
 
+const HUBS: Record<string, [number, number]> = {
+  "dallas": [32.7767, -96.7970],
+  "houston": [29.7604, -95.3698],
+  "miami": [25.7617, -80.1918],
+  "atlanta": [33.7490, -84.3880],
+  "chicago": [41.8781, -87.6298],
+  "orlando": [28.5384, -81.3789],
+  "new york": [40.7128, -74.0060],
+  "los angeles": [34.0522, -118.2437],
+  "seattle": [47.6062, -122.3321],
+  "denver": [39.7392, -104.9903],
+  "birmingham": [33.5186, -86.8104],
+}
+
 export function TripForm({ onSubmit, onChange }: TripFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pickupTimeHint, setPickupTimeHint] = useState<string>("")
   
   const {
     register,
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<any>({
     resolver: zodResolver(tripSchema),
@@ -98,9 +114,76 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
 
   // Watch entire form and bubble up to trigger live preview panel updates
   const watchedValues = watch()
+  
+  // Watch fields for dynamic Estimated Pickup Time calculation
+  const watchedCurrent = watch("currentLocation")
+  const watchedPickup = watch("pickupLocation")
+  const watchedStartTime = watch("startTime")
+
   useEffect(() => {
     onChange(watchedValues)
   }, [JSON.stringify(watchedValues)])
+
+  useEffect(() => {
+    if (!watchedCurrent || !watchedPickup || !watchedStartTime) {
+      setPickupTimeHint("");
+      return;
+    }
+
+    const resolveCoords = async (loc: string) => {
+      const clean = loc.toLowerCase().trim();
+      const matched = Object.keys(HUBS).find(k => clean.includes(k));
+      if (matched) return HUBS[matched];
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(loc)}`);
+        const data = await res.json();
+        if (data && data[0]) {
+          return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+        }
+      } catch (e) {
+        console.error("OSM geocode lookup failed in form", e);
+      }
+      return null;
+    };
+
+    const timer = setTimeout(async () => {
+      const c1 = await resolveCoords(watchedCurrent);
+      const c2 = await resolveCoords(watchedPickup);
+
+      if (c1 && c2) {
+        // Haversine distance formula with winding/highway scale
+        const R = 3958.8; // miles
+        const dLat = (c2[0] - c1[0]) * Math.PI / 180;
+        const dLon = (c2[1] - c1[1]) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(c1[0] * Math.PI / 180) * Math.cos(c2[0] * Math.PI / 180) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c * 1.18; // 18% highway winding factor
+
+        const driveHrs = distance / 55.0; // average truck speed ~55mph
+        const totalBufferHrs = driveHrs + 0.5; // add 30-min pre-trip audit/inspection window
+
+        // Parse start time (HH:MM) and add duration
+        const [startH, startM] = watchedStartTime.split(":").map(Number);
+        const startMinutes = startH * 60 + startM;
+        const pickupMinutes = Math.round(startMinutes + totalBufferHrs * 60);
+
+        const pickupH = Math.floor((pickupMinutes / 60) % 24);
+        const pickupM = Math.floor(pickupMinutes % 60);
+
+        const formattedTime = `${String(pickupH).padStart(2, '0')}:${String(pickupM).padStart(2, '0')}`;
+        setValue("pickupTime", formattedTime);
+        setPickupTimeHint(`(${Math.round(distance)} mi, ${Math.round(driveHrs * 10) / 10}h transit)`);
+      } else {
+        setPickupTimeHint("");
+      }
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [watchedCurrent, watchedPickup, watchedStartTime]);
 
   const handleFormSubmit = async (data: any) => {
     setIsLoading(true)
@@ -343,11 +426,16 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Est. Pickup Time</label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Est. Pickup Time</label>
+                {pickupTimeHint && (
+                  <span className="text-[10px] text-blue-500 font-extrabold animate-pulse">{pickupTimeHint}</span>
+                )}
+              </div>
               <input
                 type="time"
                 {...register("pickupTime")}
-                className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-lg text-sm"
+                className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>

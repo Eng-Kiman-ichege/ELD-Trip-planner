@@ -61,7 +61,11 @@ const mockDays: DayBreakdown[] = [
   }
 ]
 
-export function DailyBreakdown() {
+interface DailyBreakdownProps {
+  trip?: any;
+}
+
+export function DailyBreakdown({ trip }: DailyBreakdownProps) {
   const [expandedDay, setExpandedDay] = useState<number | null>(1)
 
   const toggleDay = (day: number) => {
@@ -73,17 +77,158 @@ export function DailyBreakdown() {
       case "Driving":
         return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-850"
       case "ON Duty":
-        return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-850"
+        return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-blue-850"
       case "OFF Duty":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-850"
+        return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-blue-850"
       case "Sleeper Berth":
-        return "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-850"
+        return "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-blue-850"
     }
   }
 
+  const parsedDays: DayBreakdown[] = [];
+  
+  if (trip?.stops && trip.stops.length > 0) {
+    const stops = trip.stops;
+    const tripDays = trip.estimated_trip_days || 1;
+    const startDt = new Date(stops[0].arrival_time || Date.now());
+    
+    for (let d = 1; d <= tripDays; d++) {
+      const dayDate = new Date(startDt.getTime() + (d - 1) * 24 * 60 * 60 * 1000);
+      const formattedDate = dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      
+      const dailyMiles = Math.round(trip.total_distance / tripDays);
+      const stopsPerDay = Math.ceil(stops.length / tripDays);
+      const startIndex = (d - 1) * stopsPerDay;
+      const endIndex = Math.min(startIndex + stopsPerDay, stops.length);
+      const dayStops = stops.slice(startIndex, endIndex);
+      
+      if (dayStops.length === 0) continue;
+      
+      let fuelCount = 0;
+      let restCount = 0;
+      let hasSleeper = false;
+      let dailyDrive = 0;
+      let dailyDuty = 0;
+      
+      const changes: DutyChange[] = dayStops.map((s: any) => {
+        let type: "pickup" | "fuel" | "rest" | "sleep" | "dropoff" = "rest";
+        if (s.stop_type === "pickup") type = "pickup";
+        else if (s.stop_type === "dropoff") type = "dropoff";
+        else if (s.stop_type === "fuel") {
+          type = "fuel";
+          fuelCount++;
+        } else if (s.stop_type === "break" || s.stop_type === "rest") {
+          type = "rest";
+          restCount++;
+        } else if (s.stop_type === "sleeper" || s.stop_type === "sleep") {
+          type = "sleep";
+          hasSleeper = true;
+        }
+        
+        let status: "ON Duty" | "Driving" | "OFF Duty" | "Sleeper Berth" = "ON Duty";
+        let notes = "";
+        let duration = `${s.duration_minutes} min`;
+        
+        if (s.duration_minutes >= 60) {
+          duration = `${(s.duration_minutes / 60).toFixed(1)} hrs`;
+        }
+        
+        if (type === "pickup") {
+          status = "ON Duty";
+          notes = `Pre-trip cargo loading and inspection at ${s.location_name}`;
+          dailyDuty += s.duration_minutes / 60;
+        } else if (type === "dropoff") {
+          status = "ON Duty";
+          notes = `Cargo discharge and post-trip logs submission at ${s.location_name}`;
+          dailyDuty += s.duration_minutes / 60;
+        } else if (type === "fuel") {
+          status = "ON Duty";
+          notes = `Fuel stop and trailer coupling check at ${s.location_name}`;
+          dailyDuty += s.duration_minutes / 60;
+        } else if (type === "rest") {
+          status = "OFF Duty";
+          notes = `Mandatory safety break near ${s.location_name}`;
+        } else if (type === "sleep") {
+          status = "Sleeper Berth";
+          notes = `Mandatory overnight sleeper berth rest near ${s.location_name}`;
+        }
+        
+        let timeStr = "08:00 AM";
+        if (s.arrival_time) {
+          try {
+            const dateObj = new Date(s.arrival_time);
+            if (!isNaN(dateObj.getTime())) {
+              timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+          } catch(e){}
+        }
+        
+        return {
+          time: timeStr,
+          status,
+          duration,
+          notes
+        };
+      });
+      
+      const finalChanges: DutyChange[] = [];
+      for (let i = 0; i < changes.length; i++) {
+        finalChanges.push(changes[i]);
+        if (i < changes.length - 1) {
+          const currentStop = dayStops[i];
+          const nextStop = dayStops[i+1];
+          let driveHrs = 3.5;
+          if (currentStop.departure_time && nextStop.arrival_time) {
+            try {
+              const diff = new Date(nextStop.arrival_time).getTime() - new Date(currentStop.departure_time).getTime();
+              driveHrs = Math.max(0.5, Number((diff / (1000 * 60 * 60)).toFixed(1)));
+            } catch(e){}
+          }
+          
+          let driveTimeStr = "09:30 AM";
+          if (currentStop.departure_time) {
+            try {
+              const depObj = new Date(currentStop.departure_time);
+              if (!isNaN(depObj.getTime())) {
+                driveTimeStr = depObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              }
+            } catch(e){}
+          }
+          
+          dailyDrive += driveHrs;
+          dailyDuty += driveHrs;
+          
+          finalChanges.push({
+            time: driveTimeStr,
+            status: "Driving",
+            duration: `${driveHrs.toFixed(1)} hrs`,
+            notes: `Highway driving transit to ${nextStop.location_name}`
+          });
+        }
+      }
+      
+      const driveTimeVal = dailyDrive > 0 ? dailyDrive : Math.min(10.5, trip.total_duration / tripDays);
+      const onDutyTimeVal = driveTimeVal + dailyDuty;
+      
+      parsedDays.push({
+        day: d,
+        date: formattedDate,
+        miles: dailyMiles,
+        driveTime: `${driveTimeVal.toFixed(1)} hrs`,
+        onDutyTime: `${onDutyTimeVal.toFixed(1)} hrs`,
+        fuelStops: fuelCount,
+        restBreaks: restCount,
+        overnightSleeper: hasSleeper,
+        changes: finalChanges
+      });
+    }
+  }
+  
+  const displayDays = parsedDays.length > 0 ? parsedDays : mockDays;
+
   return (
     <div className="space-y-4 select-none">
-      {mockDays.map((dayData) => {
+      {displayDays.map((dayData) => {
         const isExpanded = expandedDay === dayData.day;
         return (
           <div
@@ -114,7 +259,7 @@ export function DailyBreakdown() {
                   <span className="flex items-center gap-1"><Fuel className="h-3.5 w-3.5 text-amber-500" /> {dayData.fuelStops} stops</span>
                   <span className="flex items-center gap-1"><Coffee className="h-3.5 w-3.5 text-emerald-500" /> {dayData.restBreaks} breaks</span>
                 </div>
-                {isExpanded ? <ChevronUp className="h-5 w-5 text-slate-450" /> : <ChevronDown className="h-5 w-5 text-slate-450" />}
+                {isExpanded ? <ChevronUp className="h-5 w-5 text-slate-455" /> : <ChevronDown className="h-5 w-5 text-slate-455" />}
               </div>
             </button>
 

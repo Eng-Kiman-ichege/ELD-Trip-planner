@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Polyline, Marker, Popup } from "react-leaflet"
+import { MapContainer, TileLayer, Polyline, Marker, Popup, Tooltip } from "react-leaflet"
 import L from "leaflet"
 import { ShieldCheck, Sparkles } from "lucide-react"
 
@@ -56,9 +56,11 @@ interface RouteMapProps {
   zoomLevel?: number;
   coordinates?: [number, number][];
   stops?: StopCoordinate[];
+  distance?: number;
+  duration?: number;
 }
 
-export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops }: RouteMapProps) {
+export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops, distance, duration }: RouteMapProps) {
   const activeStops = stops || routeStops
   const routePath = coordinates || activeStops.map(s => s.coords)
   const centerCoords: [number, number] = activeStops[0]?.coords || [30.5000, -88.5000]
@@ -94,6 +96,20 @@ export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops }
             position={stop.coords}
             icon={getMarkerIcon(stop.type)}
           >
+            <Tooltip 
+              direction="top" 
+              offset={[0, -12]} 
+              opacity={0.98}
+              className="custom-leaflet-hover-tooltip"
+            >
+              <div className="space-y-0.5 font-sans min-w-[120px]">
+                <div className="text-[8px] font-extrabold uppercase text-blue-500 dark:text-blue-400 tracking-wider">
+                  {stop.type} Location
+                </div>
+                <div className="font-extrabold text-[11px] leading-tight">{stop.name}</div>
+                {stop.time && <div className="text-slate-500 dark:text-slate-400 font-bold text-[9px] mt-0.5">{stop.time}</div>}
+              </div>
+            </Tooltip>
             <Popup className="custom-leaflet-popup">
               <div className="p-3 w-56 space-y-1 font-sans text-xs">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-1.5 mb-1.5">
@@ -121,9 +137,12 @@ export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops }
           {activeStops[0]?.name.split(' ')[0]} ➔ {activeStops[activeStops.length - 1]?.name.split(' ')[0]}
         </p>
         <div className="mt-2 space-y-1 text-slate-400 text-[11px] font-semibold">
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-4">
             <span>Distance:</span>
-            <span className="text-white">{routePath.length > 0 ? "Dynamic Path" : "1,180 mi"}</span>
+            <span className="text-white text-right">
+              {distance ? `${Math.round(distance).toLocaleString()} mi` : "Dynamic"}
+              {duration ? ` (${Math.round(duration)} hrs)` : ""}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Stops count:</span>

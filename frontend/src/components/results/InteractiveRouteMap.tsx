@@ -8,10 +8,51 @@ interface InteractiveRouteMapProps {
 }
 
 export function InteractiveRouteMap({ trip, coordinates }: InteractiveRouteMapProps) {
+  // Map backend stops to UI StopCoordinate format
+  const stops = trip?.stops?.map((s: any) => {
+    let type: "pickup" | "dropoff" | "fuel" | "rest" | "sleep" = "rest";
+    if (s.stop_type === "pickup") type = "pickup";
+    else if (s.stop_type === "dropoff") type = "dropoff";
+    else if (s.stop_type === "fuel") type = "fuel";
+    else if (s.stop_type === "break") type = "rest";
+    else if (s.stop_type === "sleeper") type = "sleep";
+
+    // Format local time nicely
+    let formattedTime = "Scheduled";
+    if (s.arrival_time) {
+      try {
+        const date = new Date(s.arrival_time);
+        if (!isNaN(date.getTime())) {
+          formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+          formattedTime = String(s.arrival_time);
+        }
+      } catch (e) {
+        formattedTime = String(s.arrival_time);
+      }
+    }
+
+    return {
+      id: String(s.id),
+      name: s.location_name,
+      type,
+      coords: [Number(s.latitude), Number(s.longitude)] as [number, number],
+      time: formattedTime,
+      details: s.notes || ""
+    };
+  }) || [];
+
   return (
     <Card className="relative h-[580px] w-full border-slate-200/50 dark:border-slate-800/50 bg-slate-900 overflow-hidden shadow-2xl rounded-2xl select-none group">
       {/* Real interactive OpenStreetMap Tile Layer component */}
-      <RouteMap height="100%" zoomLevel={5} coordinates={coordinates} />
+      <RouteMap 
+        height="100%" 
+        zoomLevel={5} 
+        coordinates={coordinates} 
+        stops={stops.length > 0 ? stops : undefined}
+        distance={trip?.total_distance}
+        duration={trip?.total_duration}
+      />
 
       {/* Floating Route Statistics Summary Card (Bottom Left) */}
       <div className="absolute bottom-4 left-4 z-20 bg-slate-950/90 border border-slate-800/80 p-4 rounded-xl max-w-[260px] shadow-2xl backdrop-blur-md">

@@ -1,6 +1,8 @@
 import os
 import math
 import json
+import urllib.request
+import urllib.parse
 
 class RoutingService:
     @staticmethod
@@ -43,13 +45,36 @@ class RoutingService:
         }
 
         def find_coords(loc_str, default_coords):
+            loc_clean = loc_str.lower().strip()
+            # First check hardcoded popular hubs for instant lookup
             for name, coords in hubs.items():
-                if name in loc_str:
+                if name in loc_clean:
                     return coords[0], coords[1], coords[2]
+            
+            # Dynamic OSM Nominatim geocoding fallback
+            try:
+                query = urllib.parse.quote(loc_str)
+                url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1"
+                req = urllib.request.Request(
+                    url,
+                    headers={'User-Agent': 'RouteELD-Logistics-Planner-Backend'}
+                )
+                with urllib.request.urlopen(req, timeout=4) as response:
+                    res_data = json.loads(response.read().decode())
+                    if res_data:
+                        lat = float(res_data[0]['lat'])
+                        lon = float(res_data[0]['lon'])
+                        display_name = res_data[0].get('display_name', loc_str)
+                        # Shorten the name to just the first part for premium UX
+                        short_name = ", ".join(display_name.split(",")[:2])
+                        return lat, lon, short_name
+            except Exception as e:
+                print(f"OSM Nominatim Geocoding error for {loc_str}: {e}")
+
             return default_coords[0], default_coords[1], loc_str.title()
 
-        lat1, lon1, real_origin = find_coords(org, (32.7767, -96.7970))
-        lat2, lon2, real_destination = find_coords(dest, (25.7617, -80.1918))
+        lat1, lon1, real_origin = find_coords(origin, (32.7767, -96.7970))
+        lat2, lon2, real_destination = find_coords(destination, (25.7617, -80.1918))
 
         # Haversine distance formula (straight line distance)
         R = 3958.8  # Earth radius in miles

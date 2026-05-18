@@ -43,3 +43,28 @@
   border: 1px solid #1e293b;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3) !important;
 }
+
+/* Custom premium Leaflet hover tooltips styling */
+.custom-leaflet-hover-tooltip {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+.custom-leaflet-hover-tooltip::before {
+  border-top-color: #ffffff !important;
+}
+
+.dark .custom-leaflet-hover-tooltip {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4) !important;
+}
+
+.dark .custom-leaflet-hover-tooltip::before {
+  border-top-color: #0f172a !important;
+}

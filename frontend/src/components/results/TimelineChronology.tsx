@@ -11,16 +11,72 @@ export interface ChronoStop {
   mile: number;
 }
 
-const timelineData: ChronoStop[] = [
-  { type: "pickup", location: "Dallas Terminal - Warehouse 4", arrival: "Day 1, 08:00 AM", departure: "Day 1, 09:30 AM", duration: "1.5 hrs", status: "ON Duty", mile: 0 },
-  { type: "fuel", location: "Loves Travel Stop #48 - Lindale, TX", arrival: "Day 1, 12:30 PM", departure: "Day 1, 01:00 PM", duration: "30 min", status: "ON Duty", mile: 240 },
-  { type: "rest", location: "Pilot Travel Center - Meridian, MS", arrival: "Day 1, 04:30 PM", departure: "Day 1, 05:30 PM", duration: "1 hr", status: "OFF Duty", mile: 480 },
-  { type: "sleep", location: "Atlanta Rest Oasis - Sleeper Berth Zone", arrival: "Day 1, 08:00 PM", departure: "Day 2, 06:00 AM", duration: "10 hrs", status: "Sleeper Berth", mile: 720 },
-  { type: "rest", location: "Orlando Logistics Depot", arrival: "Day 2, 09:30 AM", departure: "Day 2, 10:15 AM", duration: "45 min", status: "ON Duty", mile: 980 },
-  { type: "dropoff", location: "Miami Cargo Discharge - Port Terminal B", arrival: "Day 2, 02:00 PM", departure: "Day 2, 03:30 PM", duration: "1.5 hrs", status: "ON Duty", mile: 1180 }
-]
+interface TimelineChronologyProps {
+  trip?: any;
+}
 
-export function TimelineChronology() {
+export function TimelineChronology({ trip }: TimelineChronologyProps) {
+  const timelineData: ChronoStop[] = trip?.stops && trip.stops.length > 0 
+    ? trip.stops.map((s: any, idx: number) => {
+        let type: "pickup" | "fuel" | "rest" | "sleep" | "dropoff" = "rest";
+        if (s.stop_type === "pickup") type = "pickup";
+        else if (s.stop_type === "dropoff") type = "dropoff";
+        else if (s.stop_type === "fuel") type = "fuel";
+        else if (s.stop_type === "break" || s.stop_type === "rest") type = "rest";
+        else if (s.stop_type === "sleeper" || s.stop_type === "sleep") type = "sleep";
+
+        // Format arrival and departure times
+        let formattedArrival = s.arrival_time || "Scheduled";
+        if (s.arrival_time && s.arrival_time.includes("T")) {
+          try {
+            const date = new Date(s.arrival_time);
+            if (!isNaN(date.getTime())) {
+              formattedArrival = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+          } catch (e) {}
+        }
+
+        let formattedDeparture = s.departure_time || "Scheduled";
+        if (s.departure_time && s.departure_time.includes("T")) {
+          try {
+            const date = new Date(s.departure_time);
+            if (!isNaN(date.getTime())) {
+              formattedDeparture = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+          } catch (e) {}
+        }
+
+        let status: "ON Duty" | "Driving" | "OFF Duty" | "Sleeper Berth" = "ON Duty";
+        if (type === "pickup" || type === "dropoff" || type === "fuel") {
+          status = "ON Duty";
+        } else if (type === "rest") {
+          status = "OFF Duty";
+        } else if (type === "sleep") {
+          status = "Sleeper Berth";
+        }
+
+        // Proportional mileage along the route
+        const mile = Math.round((idx / (trip.stops.length - 1 || 1)) * (trip.total_distance || 0));
+
+        return {
+          type,
+          location: s.location_name,
+          arrival: formattedArrival,
+          departure: formattedDeparture,
+          duration: s.duration_minutes >= 60 ? `${(s.duration_minutes / 60).toFixed(1)} hrs` : `${s.duration_minutes} min`,
+          status,
+          mile,
+        };
+      })
+    : [
+        { type: "pickup", location: "Dallas Terminal - Warehouse 4", arrival: "Day 1, 08:00 AM", departure: "Day 1, 09:30 AM", duration: "1.5 hrs", status: "ON Duty", mile: 0 },
+        { type: "fuel", location: "Loves Travel Stop #48 - Lindale, TX", arrival: "Day 1, 12:30 PM", departure: "Day 1, 01:00 PM", duration: "30 min", status: "ON Duty", mile: 240 },
+        { type: "rest", location: "Pilot Travel Center - Meridian, MS", arrival: "Day 1, 04:30 PM", departure: "Day 1, 05:30 PM", duration: "1 hr", status: "OFF Duty", mile: 480 },
+        { type: "sleep", location: "Atlanta Rest Oasis - Sleeper Berth Zone", arrival: "Day 1, 08:00 PM", departure: "Day 2, 06:00 AM", duration: "10 hrs", status: "Sleeper Berth", mile: 720 },
+        { type: "rest", location: "Orlando Logistics Depot", arrival: "Day 2, 09:30 AM", departure: "Day 2, 10:15 AM", duration: "45 min", status: "ON Duty", mile: 980 },
+        { type: "dropoff", location: "Miami Cargo Discharge - Port Terminal B", arrival: "Day 2, 02:00 PM", departure: "Day 2, 03:30 PM", duration: "1.5 hrs", status: "ON Duty", mile: 1180 }
+      ];
+
   const getIcon = (type: ChronoStop["type"]) => {
     switch (type) {
       case "pickup":
@@ -57,11 +113,11 @@ export function TimelineChronology() {
       case "Driving":
         return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-850"
       case "ON Duty":
-        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-850"
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-blue-850"
       case "OFF Duty":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-850"
+        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-blue-850"
       case "Sleeper Berth":
-        return "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-850"
+        return "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-blue-850"
     }
   }
 

@@ -34,18 +34,91 @@ export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHo
   }
 
   // Build per-day chart data from trip duration
-  const tripDays = trip?.estimated_trip_days || 2
-  const distancePerDay = trip ? Math.round(trip.total_distance / tripDays) : 720
-  const chartData = Array.from({ length: tripDays }, (_, i) => ({
-    name: `Day ${i + 1} Drive`,
-    hours: i === tripDays - 1 ? Math.round((trip?.total_duration || 17) % 11) || 7 : 11,
-    fuel: Math.round(distancePerDay / 6.5),
-    distance: distancePerDay,
-  }))
+  const tripDays = trip?.estimated_trip_days || 2;
+  const distancePerDay = trip ? Math.round(trip.total_distance / tripDays) : 720;
+  
+  // 1. Group stops by relative day to build real daily breakdown
+  const parsedDays: any[] = [];
+  
+  if (trip?.stops && trip.stops.length > 0) {
+    const stops = trip.stops;
+    const startDt = new Date(stops[0].arrival_time || Date.now());
+    
+    for (let d = 1; d <= tripDays; d++) {
+      const dailyMiles = Math.round(trip.total_distance / tripDays);
+      const stopsPerDay = Math.ceil(stops.length / tripDays);
+      const startIndex = (d - 1) * stopsPerDay;
+      const endIndex = Math.min(startIndex + stopsPerDay, stops.length);
+      const dayStops = stops.slice(startIndex, endIndex);
+      
+      if (dayStops.length === 0) continue;
+      
+      let dailyDrive = 0;
+      for (let i = 0; i < dayStops.length - 1; i++) {
+        const currentStop = dayStops[i];
+        const nextStop = dayStops[i+1];
+        let driveHrs = 3.5;
+        if (currentStop.departure_time && nextStop.arrival_time) {
+          try {
+            const diff = new Date(nextStop.arrival_time).getTime() - new Date(currentStop.departure_time).getTime();
+            driveHrs = Math.max(0.5, Number((diff / (1000 * 60 * 60)).toFixed(1)));
+          } catch(e){}
+        }
+        dailyDrive += driveHrs;
+      }
+      
+      const driveTimeVal = dailyDrive > 0 ? dailyDrive : Math.min(10.5, trip.total_duration / tripDays);
+      
+      parsedDays.push({
+        day: d,
+        driveTime: driveTimeVal,
+        fuel: Math.round(dailyMiles / 6.5),
+        distance: dailyMiles
+      });
+    }
+  }
+
+  // Dynamic daily log statistics
+  const day1Data = parsedDays[0] || { driveTime: 8.5, fuel: 110, distance: 720 };
+  const day1DriveHours = Number(day1Data.driveTime.toFixed(1));
+  const day1OnDutyHours = Number(Math.min(13.8, day1DriveHours + (trip?.stops?.filter((s: any) => s.stop_type !== 'sleeper' && s.stop_type !== 'break').length || 2) * 0.75).toFixed(1));
+  const totalCycleUsed = trip?.current_cycle_used || 22;
+  const cycleRemaining = Math.max(0, Number((70 - totalCycleUsed - (trip?.total_duration || 0)).toFixed(1)));
+
+  const chartData = parsedDays.length > 0 
+    ? parsedDays.map(d => ({
+        name: `Day ${d.day} Drive`,
+        hours: Number(d.driveTime.toFixed(1)),
+        fuel: d.fuel,
+        distance: d.distance
+      }))
+    : Array.from({ length: tripDays }, (_, i) => ({
+        name: `Day ${i + 1} Drive`,
+        hours: i === tripDays - 1 ? Math.round((trip?.total_duration || 17) % 11) || 7 : 11,
+        fuel: Math.round(distancePerDay / 6.5),
+        distance: distancePerDay,
+      }));
+
+  // Extract real locations for insights
+  const pickupStop = trip?.stops?.find((s: any) => s.stop_type === "pickup");
+  const dropoffStop = trip?.stops?.find((s: any) => s.stop_type === "dropoff");
+  const breakStop = trip?.stops?.find((s: any) => s.stop_type === "break" || s.stop_type === "rest");
+  const sleepStop = trip?.stops?.find((s: any) => s.stop_type === "sleeper" || s.stop_type === "sleep");
+  const fuelStop = trip?.stops?.find((s: any) => s.stop_type === "fuel");
+
+  const breakLocation = breakStop?.location_name || "midway corridor";
+  const sleepLocation = sleepStop?.location_name || "overnight rest zone";
+  const fuelLocation = fuelStop?.location_name || "optimized truck stop";
+  const destinationCity = dropoffStop?.location_name?.split(',')[0] || "destination port";
 
   // Parse route coordinates from backend
   const routeCoords: [number, number][] = trip?.coordinates
-    ? trip.coordinates.map((c: any) => [c[1] ?? c.lat, c[0] ?? c.lng] as [number, number])
+    ? trip.coordinates.map((c: any) => {
+        if (Array.isArray(c)) {
+          return [Number(c[0]), Number(c[1])] as [number, number];
+        }
+        return [Number(c.lat), Number(c.lng)] as [number, number];
+      })
     : []
 
   return (
@@ -170,30 +243,30 @@ export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHo
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-slate-500">
                       <span>11-Hour Driving Rule today</span>
-                      <span className="text-slate-800 dark:text-slate-200">8.5 / 11.0 hrs used</span>
+                      <span className="text-slate-800 dark:text-slate-200">{day1DriveHours} / 11.0 hrs used</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: "77%" }}></div>
+                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, (day1DriveHours / 11) * 100)}%` }}></div>
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-slate-500">
                       <span>14-Hour Daily Duty Window today</span>
-                      <span className="text-slate-800 dark:text-slate-200">11.0 / 14.0 hrs used</span>
+                      <span className="text-slate-800 dark:text-slate-200">{day1OnDutyHours} / 14.0 hrs used</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full" style={{ width: "78%" }}></div>
+                      <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (day1OnDutyHours / 14) * 100)}%` }}></div>
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-slate-500">
                       <span>70-Hour / 8-Day Cycle limit</span>
-                      <span className="text-slate-800 dark:text-slate-200">37.5 / 70.0 hrs remaining</span>
+                      <span className="text-slate-800 dark:text-slate-200">{cycleRemaining} / 70.0 hrs remaining</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: "53%" }}></div>
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (cycleRemaining / 70) * 100)}%` }}></div>
                     </div>
                   </div>
                 </div>
@@ -270,19 +343,19 @@ export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHo
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="p-4 border border-blue-100 bg-blue-50/50 text-blue-800 dark:border-blue-900/20 dark:bg-blue-950/20 dark:text-blue-300 rounded-xl flex items-start gap-2.5">
                   <Info className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-                  <p className="text-xs font-semibold leading-relaxed">Mandatory 30-minute rest break required near Atlanta, GA terminal.</p>
+                  <p className="text-xs font-semibold leading-relaxed">Mandatory 30-minute rest break scheduled near {breakLocation}.</p>
                 </div>
                 <div className="p-4 border border-indigo-100 bg-indigo-50/50 text-indigo-800 dark:border-indigo-900/20 dark:bg-indigo-950/20 dark:text-indigo-300 rounded-xl flex items-start gap-2.5">
                   <ShieldCheck className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-                  <p className="text-xs font-semibold leading-relaxed">Full driver HOS cycle reset is available after overnight 10h sleeper rest stop.</p>
+                  <p className="text-xs font-semibold leading-relaxed">Full driver HOS cycle reset is available after overnight 10h sleeper rest stop near {sleepLocation}.</p>
                 </div>
                 <div className="p-4 border border-amber-100 bg-amber-50/50 text-amber-800 dark:border-amber-900/20 dark:bg-amber-950/20 dark:text-amber-300 rounded-xl flex items-start gap-2.5">
                   <Fuel className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-                  <p className="text-xs font-semibold leading-relaxed">Optimized fuel stop calculated near Loves travel stop to maximize range.</p>
+                  <p className="text-xs font-semibold leading-relaxed">Optimized fuel stop calculated near {fuelLocation} to maximize range.</p>
                 </div>
                 <div className="p-4 border border-red-100 bg-red-50/50 text-red-800 dark:border-red-900/20 dark:bg-red-950/20 dark:text-red-300 rounded-xl flex items-start gap-2.5">
                   <AlertTriangle className="h-4.5 w-4.5 shrink-0 mt-0.5 animate-pulse" />
-                  <p className="text-xs font-semibold leading-relaxed">Heavy rush-hour traffic expected on I-95 south entering Miami Port cargo bay.</p>
+                  <p className="text-xs font-semibold leading-relaxed">Heavy congestion expected entering {destinationCity} cargo bay. Plan arrival window carefully.</p>
                 </div>
               </div>
             </div>
@@ -319,7 +392,7 @@ export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHo
             </div>
           </div>
           
-          <TimelineChronology />
+          <TimelineChronology trip={trip} />
         </div>
 
         {/* 5. Daily Driving Breakdown Section */}
@@ -329,7 +402,7 @@ export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHo
             <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold">Expand daily schedules for detailed duty segments</p>
           </div>
           
-          <DailyBreakdown />
+          <DailyBreakdown trip={trip} />
         </div>
 
         {/* 6. Route Performance Metrics */}

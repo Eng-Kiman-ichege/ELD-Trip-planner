@@ -121,5 +121,11 @@ export const api = {
     async getLogs(id: string | number) {
       return request<any[]>(`/trips/${id}/logs/`);
     },
+
+    async delete(id: string | number) {
+      return request<any>(`/trips/${id}/`, {
+        method: "DELETE",
+      });
+    },
   },
 };
