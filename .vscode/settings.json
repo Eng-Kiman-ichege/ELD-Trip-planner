@@ -1,10 +1,10 @@
 {
-  "python.defaultInterpreterPath": "./Backend/venv/bin/python",
+  "python.defaultInterpreterPath": "/Users/evan/ELD/Backend/venv/bin/python",
   "python.analysis.extraPaths": [
-    "./Backend"
+    "/Users/evan/ELD/Backend"
   ],
   "python.autoComplete.extraPaths": [
-    "./Backend"
+    "/Users/evan/ELD/Backend"
   ],
   "python.analysis.diagnosticSeverityOverrides": {
     "reportMissingImports": "none",
