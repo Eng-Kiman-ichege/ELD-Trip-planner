@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": "./venv/bin/python",
+  "python.analysis.extraPaths": [
+    "./"
+  ],
+  "python.autoComplete.extraPaths": [
+    "./"
+  ],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportUnusedImport": "none"
+  }
+}
