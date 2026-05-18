@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom"
 import { Button } from "../ui/button"
 import { Truck, Menu, X } from "lucide-react"
 import { ThemeToggle } from "./ThemeToggle"
+import { api } from "../../lib/api"
 
 interface NavbarProps {
   isDark: boolean;
@@ -60,25 +61,54 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
           {/* Reusable Theme Toggle Switcher */}
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
 
-          <Button 
-            variant="ghost" 
-            className="hidden sm:inline-flex text-xs font-bold text-slate-650 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900 rounded-xl"
-            onClick={() => navigate("/dashboard")}
-          >
-            Sign In
-          </Button>
+          {api.auth.isAuthenticated() ? (
+            <>
+              <Button 
+                variant="ghost" 
+                className="hidden sm:inline-flex text-xs font-bold text-slate-650 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900 rounded-xl"
+                onClick={() => {
+                  api.auth.logout();
+                  navigate("/");
+                  window.location.reload();
+                }}
+              >
+                Sign Out
+              </Button>
 
-          <Button 
-            onClick={() => navigate("/planner")}
-            className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/15 h-10 px-4 text-xs font-extrabold rounded-xl transition-all"
-          >
-            Start Planning
-          </Button>
+              <Button 
+                onClick={() => navigate("/planner")}
+                className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/15 h-10 px-4 text-xs font-extrabold rounded-xl transition-all"
+              >
+                Start Planning
+              </Button>
 
-          {/* User profile avatar */}
-          <div className="hidden sm:flex h-10 w-10 border border-slate-200 dark:border-slate-800 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl items-center justify-center text-xs font-bold text-white shadow shadow-indigo-500/10 cursor-pointer">
-            JD
-          </div>
+              {/* User profile avatar */}
+              <div 
+                onClick={() => navigate("/dashboard")}
+                title={`Logged in as ${api.auth.getUsername()}`}
+                className="hidden sm:flex h-10 w-10 border border-slate-200 dark:border-slate-800 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl items-center justify-center text-xs font-bold text-white shadow shadow-indigo-500/10 cursor-pointer"
+              >
+                {api.auth.getUserInitials()}
+              </div>
+            </>
+          ) : (
+            <>
+              <Button 
+                variant="ghost" 
+                className="hidden sm:inline-flex text-xs font-bold text-slate-650 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900 rounded-xl"
+                onClick={() => navigate("/login")}
+              >
+                Sign In
+              </Button>
+
+              <Button 
+                onClick={() => navigate("/login")}
+                className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/15 h-10 px-4 text-xs font-extrabold rounded-xl transition-all"
+              >
+                Start Planning
+              </Button>
+            </>
+          )}
 
           {/* Responsive Hamburger Mobile Toggle Button (Visible only on lg down) */}
           <button
@@ -114,25 +144,53 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
             ))}
 
             <div className="flex flex-col gap-3 mt-4">
-              <Button 
-                variant="outline" 
-                className="w-full h-11 text-xs font-bold rounded-xl border-slate-200 dark:border-slate-800"
-                onClick={() => {
-                  setIsMenuOpen(false)
-                  navigate("/dashboard")
-                }}
-              >
-                Sign In
-              </Button>
-              <Button 
-                className="w-full h-11 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  setIsMenuOpen(false)
-                  navigate("/planner")
-                }}
-              >
-                Start Planning
-              </Button>
+              {api.auth.isAuthenticated() ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-11 text-xs font-bold rounded-xl border-slate-200 dark:border-slate-800"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      api.auth.logout();
+                      navigate("/");
+                      window.location.reload();
+                    }}
+                  >
+                    Sign Out ({api.auth.getUsername()})
+                  </Button>
+                  <Button 
+                    className="w-full h-11 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate("/planner");
+                    }}
+                  >
+                    Start Planning
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-11 text-xs font-bold rounded-xl border-slate-200 dark:border-slate-800"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate("/login");
+                    }}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    className="w-full h-11 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate("/login");
+                    }}
+                  >
+                    Start Planning
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

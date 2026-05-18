@@ -39,7 +39,7 @@ const initialInsights: Insight[] = [
 
 interface TripPlannerProps {
   onNavigateHome: () => void;
-  onNavigateResults: () => void;
+  onNavigateResults: (id: number) => void;
 }
 
 export function TripPlanner({ onNavigateHome, onNavigateResults }: TripPlannerProps) {
@@ -54,36 +54,9 @@ export function TripPlanner({ onNavigateHome, onNavigateResults }: TripPlannerPr
   }
 
   // Triggered on form submit click (Generate Plan)
-  const handleFormSubmit = (data: TripFormData) => {
-    // Simulate updating route preview data based on fields
-    const updatedStops: Stop[] = [
-      { name: data.currentLocation || "Origin", type: "start", mile: 0 },
-      { name: "Optimized Fuel Stop", type: "fuel", mile: Math.round(data.fuelCapacity * 0.7 * (data.mpgEstimate || 6.5)) },
-      { name: "Mandatory HOS Break", type: "rest", mile: 440 },
-      { name: "Overnight Sleeper Berth", type: "sleep", mile: 880 },
-      { name: data.dropoffLocation || "Destination", type: "end", mile: 1200 }
-    ]
-    
-    const updatedRules: RuleStatus[] = [
-      { name: "11-Hour Driving Rule", limit: "11:00 hrs", used: `${Math.round(data.currentDrivingHoursToday)}:00 hrs`, status: data.currentDrivingHoursToday > 10 ? "warning" : "compliant", description: "Active audit based on daily driving logs." },
-      { name: "14-Hour On-Duty Window", limit: "14:00 hrs", used: `${Math.round(data.currentOnDutyHoursToday)}:00 hrs`, status: data.currentOnDutyHoursToday >= 14 ? "violation" : "compliant", description: "Daily active duty window checks." },
-      { name: "70-Hour / 8-Day Cycle", limit: "70:00 hrs", used: `${Math.round(data.currentCycleUsed)}:00 hrs`, status: data.currentCycleUsed > 60 ? "warning" : "compliant", description: "Multi-day cycle parameters." },
-      { name: "30-Min Rest Break", limit: "8:00 hrs limit", used: "Compliant", status: "compliant", description: "Audit compliance with the 30-minute rest rule." }
-    ]
-
-    const updatedInsights: Insight[] = [
-      { text: `Truck ${data.truckNumber} configured with capacity of ${data.fuelCapacity} gal.`, type: "info" },
-      { text: `Optimal fuel stops generated using ${data.mpgEstimate} MPG.`, type: "fuel" },
-      { text: data.autoHOS ? "Automatic HOS auditing has injected rest stops." : "HOS override: Driver must manage compliance manual logs.", type: "rest" },
-      { text: data.avoidTolls ? "Tolls avoided. Estimated travel time might increase." : "Route includes standard primary toll lanes.", type: "warning" }
-    ]
-
-    setStops(updatedStops)
-    setRules(updatedRules)
-    setInsights(updatedInsights)
-    
-    // Jump straight to Results page showing full charts and interactive maps
-    onNavigateResults()
+  const handleFormSubmit = (response: any) => {
+    // Jump straight to Results page showing full charts and interactive maps using the DB-seeded trip ID!
+    onNavigateResults(response.id)
   }
 
   return (

@@ -9,7 +9,7 @@ export function Planner() {
     <PageContainer>
       <TripPlanner 
         onNavigateHome={() => navigate("/")} 
-        onNavigateResults={() => navigate("/trip/1")} 
+        onNavigateResults={(id) => navigate(`/trip/${id}`)} 
       />
     </PageContainer>
   )

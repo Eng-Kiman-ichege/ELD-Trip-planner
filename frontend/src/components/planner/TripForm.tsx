@@ -4,7 +4,8 @@ import * as z from "zod"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
-import { MapPin, Truck, Sliders, Settings, Calendar, Loader2 } from "lucide-react"
+import { MapPin, Truck, Sliders, Settings, Calendar, Loader2, AlertTriangle } from "lucide-react"
+import { api } from "../../lib/api"
 
 // Autocomplete recommendations for US states, regions, and major cities
 const cities = [
@@ -82,6 +83,7 @@ interface TripFormProps {
 
 export function TripForm({ onSubmit, onChange }: TripFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   const {
     register,
@@ -102,10 +104,17 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
 
   const handleFormSubmit = async (data: any) => {
     setIsLoading(true)
-    // Simulate API request calculation
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    onSubmit(data as TripFormData)
+    setError(null)
+    try {
+      const response = await api.trips.create(data)
+      // Bubble up the backend response (with the DB trip record details)
+      onSubmit(response)
+    } catch (err: any) {
+      console.error("Trip creation error:", err)
+      setError(err.message || "Failed to create trip. Please verify your Django server is running.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -344,6 +353,16 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-250 text-red-800 dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400 rounded-2xl flex items-start gap-3 text-xs font-semibold">
+          <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 animate-pulse" />
+          <div>
+            <p className="font-extrabold text-sm mb-1">Route Planning Error</p>
+            <p>{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 6 — Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">

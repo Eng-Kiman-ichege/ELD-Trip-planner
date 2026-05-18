@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { 
   ShieldCheck, CheckCircle2, Navigation, Fuel, Sparkles, MapPin, 
   Clock, Calendar, AlertTriangle, AlertCircle, Info, 
@@ -17,22 +18,35 @@ import {
 } from "recharts"
 
 interface ResultsDashboardProps {
+  trip: any;
+  tripId: string;
   onNavigatePlanner: () => void;
   onNavigateHome: () => void;
 }
 
-const mockChartData = [
-  { name: "Day 1 Drive", hours: 8.5, fuel: 110, distance: 720 },
-  { name: "Day 2 Drive", hours: 7.0, fuel: 70, distance: 460 }
-]
-
-export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsDashboardProps) {
+export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHome }: ResultsDashboardProps) {
+  const navigate = useNavigate()
   const [downloading, setDownloading] = useState(false)
 
   const handleDownload = () => {
     setDownloading(true)
     setTimeout(() => setDownloading(false), 2000)
   }
+
+  // Build per-day chart data from trip duration
+  const tripDays = trip?.estimated_trip_days || 2
+  const distancePerDay = trip ? Math.round(trip.total_distance / tripDays) : 720
+  const chartData = Array.from({ length: tripDays }, (_, i) => ({
+    name: `Day ${i + 1} Drive`,
+    hours: i === tripDays - 1 ? Math.round((trip?.total_duration || 17) % 11) || 7 : 11,
+    fuel: Math.round(distancePerDay / 6.5),
+    distance: distancePerDay,
+  }))
+
+  // Parse route coordinates from backend
+  const routeCoords: [number, number][] = trip?.coordinates
+    ? trip.coordinates.map((c: any) => [c[1] ?? c.lat, c[0] ?? c.lng] as [number, number])
+    : []
 
   return (
     <div className="relative overflow-hidden bg-slate-50 min-h-screen py-12 dark:bg-slate-950">
@@ -107,8 +121,8 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
                   </div>
                   <div>
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Itinerary Route</span>
-                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-tight">Dallas, TX</p>
-                    <p className="text-xs text-slate-400 font-semibold">to Miami Port, FL</p>
+                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-tight">{trip?.pickup_location || "Origin"}</p>
+                    <p className="text-xs text-slate-400 font-semibold">to {trip?.dropoff_location || "Destination"}</p>
                   </div>
                 </div>
                 
@@ -118,8 +132,8 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
                   </div>
                   <div>
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Distance / Time</span>
-                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">1,180 Miles</p>
-                    <p className="text-xs text-slate-400 font-semibold">~21.5 Driving Hours</p>
+                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{Math.round(trip?.total_distance || 0).toLocaleString()} Miles</p>
+                    <p className="text-xs text-slate-400 font-semibold">~{Math.round(trip?.total_duration || 0)} Driving Hours</p>
                   </div>
                 </div>
 
@@ -128,9 +142,9 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Est. Arrival (ETA)</span>
-                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">May 19, 02:00 PM</p>
-                    <p className="text-xs text-slate-400 font-semibold">Total Trip: 2 Days</p>
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Est. Trip Duration</span>
+                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{trip?.estimated_trip_days || 1} Day{(trip?.estimated_trip_days || 1) > 1 ? "s" : ""}</p>
+                    <p className="text-xs text-slate-400 font-semibold">{trip?.estimated_fuel_stops || 0} Fuel / {trip?.estimated_rest_stops || 0} Rest Stops</p>
                   </div>
                 </div>
               </CardContent>
@@ -215,7 +229,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
                     <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Driving Hours allocation per day</h4>
                     <div className="h-[180px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={mockChartData}>
+                        <BarChart data={chartData}>
                           <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                           <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
                           <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
@@ -231,7 +245,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
                     <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Fuel usage per sprint (gallons)</h4>
                     <div className="h-[180px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={mockChartData}>
+                        <AreaChart data={chartData}>
                           <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                           <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
                           <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
@@ -277,7 +291,10 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
 
           {/* RIGHT SIDE: Vector Route Map */}
           <div className="lg:col-span-5 lg:sticky lg:top-20">
-            <InteractiveRouteMap />
+            <InteractiveRouteMap
+              trip={trip}
+              coordinates={routeCoords.length > 0 ? routeCoords : undefined}
+            />
           </div>
 
         </div>
@@ -289,9 +306,17 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Chronological Dispatch Stop Sequence</h3>
               <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold">Sequence of checkpoints, fuels and sleep stops</p>
             </div>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-bold">
-              6 checkpoints verified
-            </Badge>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-bold">
+                {(trip?.stops?.length || 0)} checkpoints verified
+              </Badge>
+              <Button variant="outline" size="sm" className="h-8 text-xs font-bold rounded-xl" onClick={() => navigate(`/trip/${tripId}/stops`)}>
+                View Full Stops Timeline
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs font-bold rounded-xl" onClick={() => navigate(`/trip/${tripId}/logs`)}>
+                View ELD Logs
+              </Button>
+            </div>
           </div>
           
           <TimelineChronology />
@@ -363,7 +388,9 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
           </div>
 
           <div className="relative flex flex-wrap justify-center gap-3">
-            <Button variant="outline" className="bg-white text-blue-700 hover:bg-slate-50 border-0 h-11 px-5 text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow">
+            <Button variant="outline" className="bg-white text-blue-700 hover:bg-slate-50 border-0 h-11 px-5 text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow"
+              onClick={() => navigate(`/trip/${tripId}/logs`)}
+            >
               <FileText className="h-4 w-4" /> View ELD Logs
             </Button>
             <Button 

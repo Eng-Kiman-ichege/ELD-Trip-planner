@@ -1,53 +1,96 @@
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { PageContainer } from "../layouts/PageContainer"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
+import { api } from "../lib/api"
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   CartesianGrid, LineChart, Line 
 } from "recharts"
 import { 
-  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar, PlusCircle 
+  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar, PlusCircle, Loader2 
 } from "lucide-react"
-
-// Analytics dashboard charts data
-const weeklyMileageData = [
-  { week: "Wk 1", miles: 4200, fuel: 640 },
-  { week: "Wk 2", miles: 5100, fuel: 780 },
-  { week: "Wk 3", miles: 4800, fuel: 730 },
-  { week: "Wk 4", miles: 5600, fuel: 860 }
-]
-
-const complianceTrendData = [
-  { day: "Mon", score: 98 },
-  { day: "Tue", score: 100 },
-  { day: "Wed", score: 100 },
-  { day: "Thu", score: 95 },
-  { day: "Fri", score: 100 },
-  { day: "Sat", score: 100 },
-  { day: "Sun", score: 100 }
-]
-
-// Mock listings for table rows
-interface TripRow {
-  id: string;
-  driver: string;
-  origin: string;
-  dest: string;
-  status: "active" | "completed" | "delayed";
-  eta: string;
-  compliance: string;
-}
-
-const recentTrips: TripRow[] = [
-  { id: "TX-902", driver: "John Doe", origin: "Dallas, TX", dest: "Miami Port, FL", status: "active", eta: "May 19, 02:00 PM", compliance: "100%" },
-  { id: "IL-404", driver: "Sarah Connor", origin: "Chicago, IL", dest: "Houston, TX", status: "completed", eta: "Delivered", compliance: "100%" },
-  { id: "CA-112", driver: "Marcus Aurelius", origin: "Los Angeles, CA", dest: "Seattle, WA", status: "delayed", eta: "May 20, 08:30 AM", compliance: "95%" }
-]
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(true)
+  const [trips, setTrips] = useState<any[]>([])
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setIsLoading(true)
+        const [tripsData, analyticsData] = await Promise.all([
+          api.trips.list(),
+          api.dashboard.getAnalytics()
+        ])
+        setTrips(tripsData)
+        setAnalytics(analyticsData)
+      } catch (err: any) {
+        console.error("Dashboard hydration error:", err)
+        setError("Failed to load control center metrics from server. Ensure your backend is running.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  // Dynamic charts data generation
+  const weeklyMileageData = trips.length > 0
+    ? trips.slice(0, 4).map((t, index) => ({
+        week: `Trip ${index + 1}`,
+        miles: Math.round(t.total_distance),
+        fuel: Math.round(t.total_distance / 6.5)
+      }))
+    : [
+        { week: "Trip 1", miles: 0, fuel: 0 },
+        { week: "Trip 2", miles: 0, fuel: 0 }
+      ]
+
+  const complianceTrendData = [
+    { day: "Mon", score: 100 },
+    { day: "Tue", score: 100 },
+    { day: "Wed", score: 100 },
+    { day: "Thu", score: 100 },
+    { day: "Fri", score: 100 },
+    { day: "Sat", score: 100 },
+    { day: "Sun", score: 100 }
+  ]
+
+  if (isLoading) {
+    return (
+      <PageContainer className="bg-slate-50 dark:bg-slate-950 flex items-center justify-center min-h-[calc(100vh-16rem)]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Synchronizing Control Room Logistics...</p>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  // Fallback defaults if API fails or yields null values
+  const stats = {
+    totalTrips: analytics?.total_trips ?? 0,
+    totalMiles: analytics?.total_miles ?? 0.0,
+    avgDistance: analytics?.avg_distance ?? 0.0,
+    fuelStops: analytics?.fuel_stops_planned ?? 0,
+    restStops: analytics?.rest_stops_planned ?? 0,
+    activeSchedules: analytics?.active_schedules ?? 0,
+    complianceRating: analytics?.compliance_rating ?? 100.0,
+    alerts: analytics?.alerts ?? []
+  }
+
+  // Computed values
+  const calculatedFuelGallons = Math.round(stats.totalMiles / 6.5)
+  const calculatedHours = Math.round(stats.totalMiles / 55)
+
+  // Get active trip details for live route widget (first active trip found in db)
+  const activeTrip = trips[0]
 
   return (
     <PageContainer className="bg-slate-50 dark:bg-slate-950">
@@ -74,47 +117,60 @@ export function Dashboard() {
             <Button variant="outline" onClick={() => navigate("/planner")} className="h-10 px-5 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900">
               Open Planner
             </Button>
-            <Button variant="outline" onClick={() => navigate("/trip/1/logs")} className="h-10 px-5 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900">
-              View Active Logs
-            </Button>
+            {activeTrip && (
+              <Button variant="outline" onClick={() => navigate(`/trip/${activeTrip.id}/logs`)} className="h-10 px-5 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900">
+                View Active Logs
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Display connection warning if backend failed */}
+        {error && (
+          <div className="p-4 bg-amber-50 border border-amber-250 text-amber-900 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400 rounded-2xl flex items-start gap-3 text-xs font-semibold">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+            <div>
+              <p className="font-extrabold text-sm mb-1">Local Backend Connection Warning</p>
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
 
         {/* B. Analytics Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Trips</span>
-            <p className="text-2xl font-black text-slate-800 dark:text-slate-100">24 trips</p>
-            <span className="text-[9px] font-bold text-slate-450">Active monthly budget</span>
+            <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{stats.totalTrips} trips</p>
+            <span className="text-[9px] font-bold text-slate-450">Active database sum</span>
           </Card>
 
           <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Miles Driven</span>
-            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">19,700 mi</p>
+            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{stats.totalMiles.toLocaleString()} mi</p>
             <span className="text-[9px] font-bold text-slate-450">Commercial coverage</span>
           </Card>
 
           <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fuel Usage</span>
-            <p className="text-2xl font-black text-amber-500">3,030 gal</p>
+            <p className="text-2xl font-black text-amber-500">{calculatedFuelGallons.toLocaleString()} gal</p>
             <span className="text-[9px] font-bold text-slate-450">Avg 6.5 MPG loaded</span>
           </Card>
 
           <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Compliance Score</span>
-            <p className="text-2xl font-black text-emerald-500">98.3%</p>
-            <span className="text-[9px] font-bold text-emerald-500">Excellent safety</span>
+            <p className="text-2xl font-black text-emerald-500">{stats.complianceRating}%</p>
+            <span className="text-[9px] font-bold text-emerald-500">FMCSA Monitored</span>
           </Card>
 
           <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Active Routes</span>
-            <p className="text-2xl font-black text-slate-800 dark:text-slate-100">3 active</p>
+            <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{stats.activeSchedules} active</p>
             <span className="text-[9px] font-bold text-slate-450">Satellite monitored</span>
           </Card>
 
           <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Driver Hours</span>
-            <p className="text-2xl font-black text-indigo-500">142.5 hrs</p>
+            <p className="text-2xl font-black text-indigo-500">{calculatedHours} hrs</p>
             <span className="text-[9px] font-bold text-slate-450">Weekly driving sum</span>
           </Card>
         </div>
@@ -132,75 +188,84 @@ export function Dashboard() {
               </CardHeader>
               
               <CardContent className="p-0 overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-semibold">
-                  <thead>
-                    <tr className="bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-400 font-extrabold">
-                      <th className="p-4">Trip ID</th>
-                      <th className="p-4">Driver</th>
-                      <th className="p-4">Route</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4">ETA</th>
-                      <th className="p-4">Compliance</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
-                    {recentTrips.map((row) => (
-                      <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
-                        <td className="p-4 font-extrabold text-slate-900 dark:text-slate-100">{row.id}</td>
-                        <td className="p-4 text-slate-700 dark:text-slate-350">{row.driver}</td>
-                        <td className="p-4">
-                          <span className="block text-slate-800 dark:text-slate-200">{row.origin}</span>
-                          <span className="text-[10px] text-slate-400 font-medium">to {row.dest}</span>
-                        </td>
-                        <td className="p-4">
-                          <Badge className={`h-5 text-[9px] font-bold uppercase rounded-md border-0 ${
-                            row.status === "active" 
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" 
-                              : row.status === "completed" 
-                              ? "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" 
-                              : "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400"
-                          }`}>
-                            {row.status}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400">{row.eta}</td>
-                        <td className="p-4 font-extrabold text-emerald-500">{row.compliance}</td>
-                        <td className="p-4 text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
-                              title="View Results"
-                              onClick={() => navigate("/trip/1")}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
-                              title="View Logs"
-                              onClick={() => navigate("/trip/1/logs")}
-                            >
-                              <Calendar className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
-                              title="View Stops"
-                              onClick={() => navigate("/trip/1/stops")}
-                            >
-                              <Route className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+                {trips.length === 0 ? (
+                  <div className="p-8 text-center space-y-4">
+                    <AlertCircle className="h-8 w-8 text-slate-400 mx-auto" />
+                    <div>
+                      <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">No Trips Scheduled Yet</p>
+                      <p className="text-xs text-slate-500 mt-1">Get started by planning your first logistics run and let RouteELD audit compliance.</p>
+                    </div>
+                    <Button onClick={() => navigate("/planner")} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+                      Plan First Route
+                    </Button>
+                  </div>
+                ) : (
+                  <table className="w-full text-left border-collapse text-xs font-semibold">
+                    <thead>
+                      <tr className="bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-400 font-extrabold">
+                        <th className="p-4">Trip ID</th>
+                        <th className="p-4">Driver</th>
+                        <th className="p-4">Route</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4">Distance</th>
+                        <th className="p-4">Compliance</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                      {trips.map((row) => (
+                        <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="p-4 font-extrabold text-slate-900 dark:text-slate-100">TRIP-{row.id}</td>
+                          <td className="p-4 text-slate-700 dark:text-slate-350">Safety Auditor</td>
+                          <td className="p-4">
+                            <span className="block text-slate-800 dark:text-slate-200">{row.current_location || row.pickup_location}</span>
+                            <span className="text-[10px] text-slate-400 font-medium">to {row.dropoff_location}</span>
+                          </td>
+                          <td className="p-4">
+                            <Badge className="h-5 text-[9px] font-bold uppercase rounded-md border-0 bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">
+                              Active
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-slate-600 dark:text-slate-400">{Math.round(row.total_distance)} mi</td>
+                          <td className="p-4 font-extrabold text-emerald-500">
+                            {row.is_hos_compliant ? "100% Compliant" : "Audit Check"}
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-1.5">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                title="View Results"
+                                onClick={() => navigate(`/trip/${row.id}`)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                title="View Logs"
+                                onClick={() => navigate(`/trip/${row.id}/logs`)}
+                              >
+                                <Calendar className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                title="View Stops"
+                                onClick={() => navigate(`/trip/${row.id}/stops`)}
+                              >
+                                <Route className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </CardContent>
             </Card>
 
@@ -209,7 +274,7 @@ export function Dashboard() {
               
               <Card className="border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-950/70 p-6 rounded-2xl shadow-md">
                 <CardHeader className="p-0 pb-4 border-b border-slate-100 dark:border-slate-850 mb-4">
-                  <CardTitle className="text-sm font-extrabold">Weekly Miles & Fuel allocation</CardTitle>
+                  <CardTitle className="text-sm font-extrabold">Dispatch Run Distance allocation</CardTitle>
                 </CardHeader>
                 <div className="h-[200px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -252,47 +317,53 @@ export function Dashboard() {
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Live Route Monitoring</h3>
               
-              <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow-md space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-wider">Active Trip: TX-902</span>
-                  <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-200 dark:border-green-800 font-bold">
-                    HOS Compliant
-                  </Badge>
-                </div>
+              {activeTrip ? (
+                <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow-md space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-wider">Active Trip: TRIP-{activeTrip.id}</span>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-200 dark:border-green-800 font-bold">
+                      HOS Compliant
+                    </Badge>
+                  </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                    <Navigation className="h-5 w-5 animate-pulse-slow" />
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                      <Navigation className="h-5 w-5 animate-pulse-slow" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Active Driver</span>
+                      <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Safety Auditor ({activeTrip.pickup_location.split(',')[0]} to {activeTrip.dropoff_location.split(',')[0]})</p>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Active Driver</span>
-                    <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">John Doe (Dallas to Miami)</p>
-                  </div>
-                </div>
 
-                <div className="space-y-1 text-xs font-semibold">
-                  <div className="flex justify-between text-slate-500">
-                    <span>Current stop:</span>
-                    <span className="text-slate-850 dark:text-slate-200">Meridian Pilot Center</span>
+                  <div className="space-y-1 text-xs font-semibold">
+                    <div className="flex justify-between text-slate-500">
+                      <span>Total Distance:</span>
+                      <span className="text-slate-850 dark:text-slate-200">{Math.round(activeTrip.total_distance)} miles</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500">
+                      <span>Duration:</span>
+                      <span className="text-slate-850 dark:text-slate-200">{Math.round(activeTrip.total_duration)} hours</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500">
+                      <span>Trip Stops:</span>
+                      <span className="text-slate-850 dark:text-slate-200">{activeTrip.estimated_fuel_stops} Fuel / {activeTrip.estimated_rest_stops} Rest</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-slate-500">
-                    <span>Remaining distance:</span>
-                    <span className="text-slate-850 dark:text-slate-200">560 miles</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500">
-                    <span>ETA Destination:</span>
-                    <span className="text-slate-850 dark:text-slate-200">May 19, 02:00 PM</span>
-                  </div>
-                </div>
 
-                <div className="w-full bg-slate-105 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: "53%" }}></div>
-                </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: "100%" }}></div>
+                  </div>
 
-                <Button className="w-full text-xs font-bold h-9 rounded-xl" onClick={() => navigate("/trip/1")}>
-                  Track Dispatch Center ➔
-                </Button>
-              </Card>
+                  <Button className="w-full text-xs font-bold h-9 rounded-xl cursor-pointer" onClick={() => navigate(`/trip/${activeTrip.id}`)}>
+                    Track Dispatch Center ➔
+                  </Button>
+                </Card>
+              ) : (
+                <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-2xl shadow-md text-center py-8">
+                  <p className="text-xs font-bold text-slate-400">No active dispatch schedules tracked.</p>
+                </Card>
+              )}
             </div>
 
             {/* F. Alerts Panel */}
@@ -300,35 +371,17 @@ export function Dashboard() {
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Logistics Control Alerts</h3>
               
               <div className="space-y-3">
-                <Card className="border-l-4 border-l-red-500 border border-slate-200/50 bg-white/70 dark:border-slate-850 dark:bg-slate-950/70 p-4 shadow-sm flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5 animate-pulse" />
-                  <div>
-                    <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">Mandatory 30-min break check</h5>
-                    <p className="text-[10px] text-slate-550 dark:text-slate-400 leading-normal font-semibold mt-0.5">
-                      Driver Sarah Connor has driven 7.5 continuous hours. HOS alert: rest stop mandatory in 30 minutes!
-                    </p>
-                  </div>
-                </Card>
-
-                <Card className="border-l-4 border-l-amber-500 border border-slate-200/50 bg-white/70 dark:border-slate-850 dark:bg-slate-950/70 p-4 shadow-sm flex gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">I-95 South Road Construction</h5>
-                    <p className="text-[10px] text-slate-550 dark:text-slate-400 leading-normal font-semibold mt-0.5">
-                      Heavy traffic expected entering Miami Cargo Gates. Schedule buffers have adjusted ETAs.
-                    </p>
-                  </div>
-                </Card>
-
-                <Card className="border-l-4 border-l-blue-500 border border-slate-200/50 bg-white/70 dark:border-slate-850 dark:bg-slate-950/70 p-4 shadow-sm flex gap-3">
-                  <Fuel className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">Diesel Refueling alert</h5>
-                    <p className="text-[10px] text-slate-550 dark:text-slate-400 leading-normal font-semibold mt-0.5">
-                      Loves Stop diesel prices projected to drop by $0.12/gal near I-20 at midnight.
-                    </p>
-                  </div>
-                </Card>
+                {stats.alerts.map((alert: any) => (
+                  <Card key={alert.id} className="border-l-4 border-l-blue-500 border border-slate-200/50 bg-white/70 dark:border-slate-850 dark:bg-slate-950/70 p-4 shadow-sm flex gap-3">
+                    <AlertCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{alert.title}</h5>
+                      <p className="text-[10px] text-slate-550 dark:text-slate-400 leading-normal font-semibold mt-0.5">
+                        {alert.message}
+                      </p>
+                    </div>
+                  </Card>
+                ))}
               </div>
 
             </div>

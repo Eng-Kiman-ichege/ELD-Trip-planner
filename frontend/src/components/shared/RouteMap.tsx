@@ -54,10 +54,14 @@ const getMarkerIcon = (type: StopCoordinate["type"]) => {
 interface RouteMapProps {
   height?: string;
   zoomLevel?: number;
+  coordinates?: [number, number][];
+  stops?: StopCoordinate[];
 }
 
-export function RouteMap({ height = "480px", zoomLevel = 5 }: RouteMapProps) {
-  const centerCoords: [number, number] = [30.5000, -88.5000] // Centered on Southern US
+export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops }: RouteMapProps) {
+  const activeStops = stops || routeStops
+  const routePath = coordinates || activeStops.map(s => s.coords)
+  const centerCoords: [number, number] = activeStops[0]?.coords || [30.5000, -88.5000]
 
   return (
     <div className="relative border border-slate-200/60 dark:border-slate-800/60 bg-slate-100 rounded-2xl overflow-hidden shadow-xl" style={{ height }}>
@@ -68,6 +72,7 @@ export function RouteMap({ height = "480px", zoomLevel = 5 }: RouteMapProps) {
         zoom={zoomLevel} 
         zoomControl={true}
         style={{ height: "100%", width: "100%", zIndex: 10 }}
+        key={centerCoords.toString()} // Force refresh when route changes
       >
         {/* OpenStreetMap Standard Tiles Layer */}
         <TileLayer
@@ -83,7 +88,7 @@ export function RouteMap({ height = "480px", zoomLevel = 5 }: RouteMapProps) {
         />
 
         {/* Dynamic Stops Markers */}
-        {routeStops.map((stop) => (
+        {activeStops.map((stop) => (
           <Marker
             key={stop.id}
             position={stop.coords}
@@ -112,15 +117,17 @@ export function RouteMap({ height = "480px", zoomLevel = 5 }: RouteMapProps) {
           <ShieldCheck className="h-4 w-4" />
           <span className="text-[10px] font-bold uppercase tracking-wider">HOS Compliant Routing</span>
         </div>
-        <p className="text-sm font-extrabold">Dallas ➔ Miami</p>
+        <p className="text-sm font-extrabold">
+          {activeStops[0]?.name.split(' ')[0]} ➔ {activeStops[activeStops.length - 1]?.name.split(' ')[0]}
+        </p>
         <div className="mt-2 space-y-1 text-slate-400 text-[11px] font-semibold">
           <div className="flex justify-between">
             <span>Distance:</span>
-            <span className="text-white">1,180 mi</span>
+            <span className="text-white">{routePath.length > 0 ? "Dynamic Path" : "1,180 mi"}</span>
           </div>
           <div className="flex justify-between">
-            <span>Drive Time:</span>
-            <span className="text-white">21.5 hrs</span>
+            <span>Stops count:</span>
+            <span className="text-white">{activeStops.length} stops</span>
           </div>
         </div>
       </div>
