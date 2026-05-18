@@ -6,7 +6,7 @@ import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { 
   ShieldCheck, FileText, CheckCircle2, ChevronRight, Download, 
-  Printer, Share2, Clock, Eye, AlertCircle, Calendar, Sparkles, Navigation 
+  Printer, Share2, Clock, AlertCircle, Calendar, Sparkles, Navigation 
 } from "lucide-react"
 
 // Types for activities

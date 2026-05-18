@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
 import { PageContainer } from "../layouts/PageContainer"
 import { Button } from "../components/ui/button"
 import { Truck, ArrowLeft, Navigation } from "lucide-react"
