@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { Fuel, Coffee, Bed, MapPin, Truck, HelpCircle } from "lucide-react"
+import { Fuel, Coffee, Bed, MapPin, HelpCircle } from "lucide-react"
 
 export interface ChronoStop {
   type: "pickup" | "fuel" | "rest" | "sleep" | "dropoff";

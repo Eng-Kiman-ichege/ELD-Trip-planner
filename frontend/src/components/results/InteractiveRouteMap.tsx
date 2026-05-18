@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { ZoomIn, ZoomOut, RotateCcw, MapPin, Fuel, Coffee, Bed, ArrowRight, ShieldCheck } from "lucide-react"
-import { Card, CardContent } from "../ui/card"
+import { Card } from "../ui/card"
 
 export interface MapStop {
   id: string;
