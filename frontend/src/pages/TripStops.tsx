@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom"
 import { PageContainer } from "../layouts/PageContainer"
 import { RouteMap } from "../components/shared/RouteMap"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
+import { Card } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { 
-  Fuel, Moon, Clock, Package, MapPin, Coffee, AlertTriangle, 
-  CheckCircle2, Compass, ShieldCheck, ChevronRight, Gauge 
+  Fuel, Moon, Package, MapPin, Coffee, AlertTriangle, 
+  CheckCircle2, Compass, ChevronRight, Gauge 
 } from "lucide-react"
 
 // Complete Stops sequence details

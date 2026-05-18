@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from "react-leaflet"
 import L from "leaflet"
-import { ShieldCheck, MapPin, Fuel, Coffee, Bed, Sparkles } from "lucide-react"
+import { ShieldCheck, Sparkles } from "lucide-react"
 
 // Coordinate definitions for our realistic trucking route: Dallas -> Lindale (Loves) -> Meridian (Pilot) -> Atlanta -> Orlando -> Miami
 export interface StopCoordinate {
@@ -54,10 +54,9 @@ const getMarkerIcon = (type: StopCoordinate["type"]) => {
 interface RouteMapProps {
   height?: string;
   zoomLevel?: number;
-  highlightedStopId?: string | null;
 }
 
-export function RouteMap({ height = "480px", zoomLevel = 5, highlightedStopId }: RouteMapProps) {
+export function RouteMap({ height = "480px", zoomLevel = 5 }: RouteMapProps) {
   const centerCoords: [number, number] = [30.5000, -88.5000] // Centered on Southern US
 
   return (

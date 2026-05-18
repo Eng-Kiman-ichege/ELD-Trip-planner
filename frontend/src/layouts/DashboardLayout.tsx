@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react"
+import { type ReactNode, useState, useEffect } from "react"
 import { Navbar } from "../components/shared/Navbar"
 import { Truck } from "lucide-react"
 import { Link } from "react-router-dom"
