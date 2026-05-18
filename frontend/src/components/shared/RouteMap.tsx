@@ -6,14 +6,14 @@ import { ShieldCheck, Sparkles } from "lucide-react"
 export interface StopCoordinate {
   id: string;
   name: string;
-  type: "pickup" | "dropoff" | "fuel" | "rest" | "sleep";
+  type: "pickup" | "dropoff" | "fuel" | "rest" | "sleep" | "current";
   coords: [number, number]; // [lat, lng]
   time: string;
   details: string;
 }
 
 export const routeStops: StopCoordinate[] = [
-  { id: "1", name: "Dallas Terminal", type: "pickup", coords: [32.7767, -96.7970], time: "Day 1, 08:00 AM", details: "Initial cargo loading and pre-trip HOS audit." },
+  { id: "1", name: "Dallas Terminal", type: "current", coords: [32.7767, -96.7970], time: "Day 1, 08:00 AM", details: "Initial cargo loading and pre-trip HOS audit." },
   { id: "2", name: "Loves Fuel Stop #48", type: "fuel", coords: [32.5151, -95.2902], time: "Day 1, 12:30 PM", details: "Fueling and mid-trip walkaround inspection." },
   { id: "3", name: "Meridian Pilot", type: "rest", coords: [32.3643, -88.7037], time: "Day 1, 04:30 PM", details: "Mandatory rest break and cycle assessment." },
   { id: "4", name: "Atlanta Rest Oasis", type: "sleep", coords: [33.7490, -84.3880], time: "Day 1, 08:00 PM", details: "Mandatory sleeper berth overnight rest." },
@@ -29,7 +29,10 @@ const getMarkerIcon = (type: StopCoordinate["type"]) => {
   let color = "#3b82f6" // blue
   let iconHtml = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
 
-  if (type === "dropoff") {
+  if (type === "current") {
+    color = "#14b8a6" // Teal/cyan navigation pointer
+    iconHtml = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" class="text-teal-500"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>`
+  } else if (type === "dropoff") {
     color = "#ef4444" // red
     iconHtml = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
   } else if (type === "fuel") {
@@ -58,12 +61,24 @@ interface RouteMapProps {
   stops?: StopCoordinate[];
   distance?: number;
   duration?: number;
+  hideOverlays?: boolean;
 }
 
-export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops, distance, duration }: RouteMapProps) {
+export function RouteMap({ height = "480px", zoomLevel = 11, coordinates, stops, distance, duration, hideOverlays = false }: RouteMapProps) {
   const activeStops = stops || routeStops
   const routePath = coordinates || activeStops.map(s => s.coords)
-  const centerCoords: [number, number] = activeStops[0]?.coords || [30.5000, -88.5000]
+  
+  // Center map on the geographic midpoint of all stops for optimal framing
+  let centerCoords: [number, number] = [37.0902, -95.7129] // Center of USA
+  if (activeStops.length > 0) {
+    const lats = activeStops.map(s => s.coords[0])
+    const lngs = activeStops.map(s => s.coords[1])
+    const minLat = Math.min(...lats)
+    const maxLat = Math.max(...lats)
+    const minLng = Math.min(...lngs)
+    const maxLng = Math.max(...lngs)
+    centerCoords = [(minLat + maxLat) / 2, (minLng + maxLng) / 2]
+  }
 
   return (
     <div className="relative border border-slate-200/60 dark:border-slate-800/60 bg-slate-100 rounded-2xl overflow-hidden shadow-xl" style={{ height }}>
@@ -128,34 +143,38 @@ export function RouteMap({ height = "480px", zoomLevel = 5, coordinates, stops, 
       </MapContainer>
 
       {/* Floating Route Statistics Overlay (Bottom Left) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-slate-950/90 border border-slate-800/80 p-4 rounded-xl max-w-[240px] shadow-2xl backdrop-blur-md text-white">
-        <div className="flex items-center gap-1.5 mb-2 text-blue-400">
-          <ShieldCheck className="h-4 w-4" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">HOS Compliant Routing</span>
-        </div>
-        <p className="text-sm font-extrabold">
-          {activeStops[0]?.name.split(' ')[0]} ➔ {activeStops[activeStops.length - 1]?.name.split(' ')[0]}
-        </p>
-        <div className="mt-2 space-y-1 text-slate-400 text-[11px] font-semibold">
-          <div className="flex justify-between gap-4">
-            <span>Distance:</span>
-            <span className="text-white text-right">
-              {distance ? `${Math.round(distance).toLocaleString()} mi` : "Dynamic"}
-              {duration ? ` (${Math.round(duration)} hrs)` : ""}
-            </span>
+      {!hideOverlays && (
+        <div className="absolute bottom-4 left-4 z-20 bg-slate-950/90 border border-slate-800/80 p-4 rounded-xl max-w-[240px] shadow-2xl backdrop-blur-md text-white">
+          <div className="flex items-center gap-1.5 mb-2 text-blue-400">
+            <ShieldCheck className="h-4 w-4" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">HOS Compliant Routing</span>
           </div>
-          <div className="flex justify-between">
-            <span>Stops count:</span>
-            <span className="text-white">{activeStops.length} stops</span>
+          <p className="text-sm font-extrabold">
+            {activeStops[0]?.name.split(' ')[0]} ➔ {activeStops[activeStops.length - 1]?.name.split(' ')[0]}
+          </p>
+          <div className="mt-2 space-y-1 text-slate-400 text-[11px] font-semibold">
+            <div className="flex justify-between gap-4">
+              <span>Distance:</span>
+              <span className="text-white text-right">
+                {distance ? `${Math.round(distance).toLocaleString()} mi` : "Dynamic"}
+                {duration ? ` (${Math.round(duration)} hrs)` : ""}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Stops count:</span>
+              <span className="text-white">{activeStops.length} stops</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Floating Sparkles indicator (Top Right) */}
-      <div className="absolute top-4 right-4 z-20 bg-blue-600/90 border border-blue-500/50 p-2 py-1.5 rounded-lg flex items-center gap-1.5 shadow backdrop-blur-md text-white text-[10px] font-bold">
-        <Sparkles className="h-3.5 w-3.5" />
-        AI Optimized Stops
-      </div>
+      {!hideOverlays && (
+        <div className="absolute top-4 right-4 z-20 bg-blue-600/90 border border-blue-500/50 p-2 py-1.5 rounded-lg flex items-center gap-1.5 shadow backdrop-blur-md text-white text-[10px] font-bold">
+          <Sparkles className="h-3.5 w-3.5" />
+          AI Optimized Stops
+        </div>
+      )}
 
     </div>
   )

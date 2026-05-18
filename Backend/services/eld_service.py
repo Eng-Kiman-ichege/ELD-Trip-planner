@@ -32,6 +32,7 @@ class EldService:
             
             # Map stop type to standard DOT ELD duty status
             status_map = {
+                "current": "on_duty",
                 "pickup": "on_duty",
                 "dropoff": "on_duty",
                 "fuel": "on_duty",

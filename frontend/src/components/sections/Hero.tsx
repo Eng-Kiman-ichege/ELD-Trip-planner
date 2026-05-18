@@ -3,6 +3,19 @@ import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Map, Clock, Fuel, ShieldCheck, Play } from "lucide-react"
+import { RouteMap } from "../shared/RouteMap"
+import type { StopCoordinate } from "../shared/RouteMap"
+
+const homepageStops: StopCoordinate[] = [
+  { id: "hp-1", name: "Dallas Terminal", type: "current", coords: [32.7767, -96.7970], time: "Day 1, 08:00 AM", details: "Initial cargo loading and HOS inspection." },
+  { id: "hp-2", name: "Texarkana Loves #41", type: "fuel", coords: [33.4251, -94.0477], time: "Day 1, 11:30 AM", details: "Mid-trip refuel and walkaround safety audit." },
+  { id: "hp-3", name: "Little Rock Pilot #8", type: "rest", coords: [34.7465, -92.2896], time: "Day 1, 03:00 PM", details: "Mandatory 30-minute off-duty break." },
+  { id: "hp-4", name: "Memphis Depot", type: "sleep", coords: [35.1495, -90.0490], time: "Day 1, 07:30 PM", details: "Mandatory overnight 10-hour sleeper berth reset." },
+  { id: "hp-5", name: "St. Louis TA Plaza", type: "rest", coords: [38.6270, -90.1994], time: "Day 2, 10:30 AM", details: "Short driver physical rest stop." },
+  { id: "hp-6", name: "Chicago Port Terminal", type: "dropoff", coords: [41.8781, -87.6298], time: "Day 2, 03:30 PM", details: "Cargo discharge and log verification." }
+]
+
+const homepagePath: [number, number][] = homepageStops.map(s => s.coords)
 
 interface HeroProps {
   onNavigatePlanner: () => void;
@@ -71,16 +84,16 @@ export function Hero({ onNavigatePlanner }: HeroProps) {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-48 bg-slate-100 dark:bg-slate-900 relative">
-                  {/* Mock Map Background */}
-                  <div className="absolute inset-0 opacity-50 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNFMkU4RjAiLz48L3N2Zz4=')] dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiMzMzQxNTUiLz48L3N2Zz4=')]"></div>
-                  
-                  {/* Mock Route Line */}
-                  <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
-                    <path d="M 50 150 Q 150 50, 250 100 T 450 50" fill="none" stroke="currentColor" strokeWidth="4" className="text-blue-500 drop-shadow-md" strokeDasharray="8 8" />
-                    <circle cx="50" cy="150" r="6" className="fill-blue-600" />
-                    <circle cx="450" cy="50" r="6" className="fill-red-500" />
-                  </svg>
+                <div className="h-[240px] relative overflow-hidden border-b border-slate-100 dark:border-slate-800">
+                  <RouteMap 
+                    height="100%" 
+                    zoomLevel={5} 
+                    coordinates={homepagePath} 
+                    stops={homepageStops}
+                    distance={925}
+                    duration={16.5}
+                    hideOverlays={true}
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 p-6">

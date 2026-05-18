@@ -12,6 +12,8 @@ import {
   CheckCircle2, Compass, ChevronRight, Gauge, Loader2
 } from "lucide-react"
 
+import { TripNavigationHeader } from "../components/shared/TripNavigationHeader"
+
 // Map backend stop_type to display icon
 function getStopIcon(type: string) {
   switch (type) {
@@ -51,6 +53,7 @@ export function TripStops() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [stops, setStops] = useState<any[]>([])
+  const [trip, setTrip] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,8 +62,12 @@ export function TripStops() {
     async function fetchStops() {
       try {
         setIsLoading(true)
-        const data = await api.trips.getStops(id!)
-        setStops(data)
+        const [stopsData, tripData] = await Promise.all([
+          api.trips.getStops(id!),
+          api.trips.get(id!)
+        ])
+        setStops(stopsData)
+        setTrip(tripData)
       } catch (err: any) {
         setError(err.message || "Failed to load trip stops.")
       } finally {
@@ -104,44 +111,8 @@ export function TripStops() {
     <PageContainer className="bg-slate-50 dark:bg-slate-950">
       <div className="container relative mx-auto px-4 md:px-6 space-y-10">
         
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(`/trip/${id}`)} 
-            className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer focus:outline-none"
-          >
-            Trip Results
-          </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700" />
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-650">Stops Timeline</span>
-        </div>
-
-        {/* A. Header */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-[800px]">
-            <Badge className="bg-indigo-600/90 text-white border-0 flex items-center gap-1.5 h-6 text-[10px] uppercase font-bold tracking-wider px-3 rounded-full w-fit">
-              <Compass className="h-3.5 w-3.5" /> Route Intelligence
-            </Badge>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-slate-50">
-              Trip Stops &amp; Schedule Timeline
-            </h1>
-            <p className="text-base text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
-              View all generated fuel stops, rest breaks, overnight stops, and delivery checkpoints.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2.5">
-            <Button variant="outline" className="h-9 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900" onClick={() => navigate(`/trip/${id}`)}>
-              View Route Results
-            </Button>
-            <Button variant="outline" className="h-9 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900" onClick={() => navigate(`/trip/${id}/logs`)}>
-              View ELD Logs
-            </Button>
-            <Button variant="outline" className="h-9 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900" onClick={() => navigate("/planner")}>
-              Back To Planner
-            </Button>
-          </div>
-        </div>
+        {/* Dynamic Shared Premium Trip Navigation Header */}
+        <TripNavigationHeader tripId={id!} activeTab="stops" trip={trip} />
 
         {/* Error banner */}
         {error && (

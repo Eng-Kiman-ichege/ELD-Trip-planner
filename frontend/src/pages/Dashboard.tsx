@@ -55,6 +55,23 @@ export function Dashboard() {
     fetchMetrics(true)
   }, [])
 
+  async function handleDeleteTrip(id: number, event: React.MouseEvent) {
+    event.stopPropagation()
+    if (!window.confirm("Are you sure you want to delete this trip itinerary? All stops and daily logs will be permanently deleted.")) {
+      return
+    }
+    try {
+      setIsDeletingId(id)
+      await api.trips.delete(id)
+      await fetchMetrics(false)
+    } catch (err: any) {
+      console.error("Failed to delete trip:", err)
+      alert(`Error deleting trip: ${err.message || err}`)
+    } finally {
+      setIsDeletingId(null)
+    }
+  }
+
   // Dynamic charts data generation
   const weeklyMileageData = trips.length > 0
     ? trips.slice(0, 4).map((t, index) => ({
@@ -116,8 +133,8 @@ export function Dashboard() {
   const calculatedFuelGallons = Math.round(stats.totalMiles / 6.5)
   const calculatedHours = Math.round(stats.totalMiles / 55)
 
-  // Get active trip details for live route widget (first active trip found in db)
-  const activeTrip = trips[0]
+  // Get active trip details for live route widget (currently selected active trip)
+  const activeTrip = trips.find(t => t.id === selectedTripId) || trips[0]
 
   return (
     <PageContainer className="bg-slate-50 dark:bg-slate-950">
@@ -241,7 +258,14 @@ export function Dashboard() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
                       {trips.map((row) => (
-                        <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                        <tr 
+                          key={row.id} 
+                          onClick={() => setSelectedTripId(row.id)}
+                          className={row.id === selectedTripId 
+                            ? "bg-blue-50/70 hover:bg-blue-100/60 dark:bg-blue-950/30 dark:hover:bg-blue-900/30 border-l-2 border-blue-500 transition-colors cursor-pointer"
+                            : "hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors cursor-pointer"
+                          }
+                        >
                           <td className="p-4 font-extrabold text-slate-900 dark:text-slate-100">TRIP-{row.id}</td>
                           <td className="p-4 text-slate-700 dark:text-slate-350">Safety Auditor</td>
                           <td className="p-4">
@@ -264,7 +288,7 @@ export function Dashboard() {
                                 size="icon" 
                                 className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
                                 title="View Results"
-                                onClick={() => navigate(`/trip/${row.id}`)}
+                                onClick={(e) => { e.stopPropagation(); navigate(`/trip/${row.id}`); }}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -273,7 +297,7 @@ export function Dashboard() {
                                 size="icon" 
                                 className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
                                 title="View Logs"
-                                onClick={() => navigate(`/trip/${row.id}/logs`)}
+                                onClick={(e) => { e.stopPropagation(); navigate(`/trip/${row.id}/logs`); }}
                               >
                                 <Calendar className="h-4 w-4" />
                               </Button>
@@ -282,9 +306,23 @@ export function Dashboard() {
                                 size="icon" 
                                 className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
                                 title="View Stops"
-                                onClick={() => navigate(`/trip/${row.id}/stops`)}
+                                onClick={(e) => { e.stopPropagation(); navigate(`/trip/${row.id}/stops`); }}
                               >
                                 <Route className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-lg hover:bg-red-50 hover:text-red-650 dark:hover:bg-red-950/20 dark:hover:text-red-400 text-slate-400 cursor-pointer"
+                                title="Delete Trip"
+                                disabled={isDeletingId === row.id}
+                                onClick={(e) => handleDeleteTrip(row.id, e)}
+                              >
+                                {isDeletingId === row.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-red-500" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
                               </Button>
                             </div>
                           </td>

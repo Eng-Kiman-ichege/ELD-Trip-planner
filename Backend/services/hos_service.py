@@ -152,7 +152,7 @@ class HosService:
         if transit_duration > 0.0 and transit_coordinates:
             lat_start, lon_start = transit_coordinates[0]
             add_stop(
-                stop_type="pickup",
+                stop_type="current",
                 name=f"{origin_name} Dispatch",
                 lat=lat_start,
                 lon=lon_start,

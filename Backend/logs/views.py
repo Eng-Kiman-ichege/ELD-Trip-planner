@@ -11,6 +11,5 @@ class TripLogsListView(generics.ListAPIView):
     def get_queryset(self):
         trip_id = self.kwargs.get("id")
         return DriverLog.objects.filter(
-            trip__id=trip_id, 
-            trip__user=self.request.user
+            trip__id=trip_id
         ).order_by("day_number", "start_time")

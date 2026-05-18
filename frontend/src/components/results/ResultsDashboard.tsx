@@ -17,6 +17,8 @@ import {
   AreaChart, Area, CartesianGrid 
 } from "recharts"
 
+import { TripNavigationHeader } from "../shared/TripNavigationHeader"
+
 interface ResultsDashboardProps {
   trip: any;
   tripId: string;
@@ -128,52 +130,8 @@ export function ResultsDashboard({ trip, tripId, onNavigatePlanner, onNavigateHo
 
       <div className="container relative mx-auto px-4 md:px-6 space-y-10">
         
-        {/* Breadcrumb / Back button */}
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={onNavigateHome} 
-            className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer focus:outline-none"
-          >
-            Dashboard
-          </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700" />
-          <button 
-            onClick={onNavigatePlanner} 
-            className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer focus:outline-none"
-          >
-            Planner
-          </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700" />
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-650">Optimized Trip Details</span>
-        </div>
-
-        {/* Hero Header */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-[800px]">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-slate-50">
-              Trip Route Successfully Generated
-            </h1>
-            <p className="text-base text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
-              Review your optimized route, compliance schedule, rest stops, fuel planning, and driver timeline.
-            </p>
-          </div>
-          
-          {/* Animated Status compliance badges */}
-          <div className="flex flex-wrap gap-2.5 max-w-full">
-            <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 flex items-center gap-1.5 shadow shadow-green-500/10 h-7 text-xs px-3 rounded-full">
-              <ShieldCheck className="h-3.5 w-3.5" /> HOS Compliant
-            </Badge>
-            <Badge className="bg-blue-500 hover:bg-blue-600 text-white border-0 flex items-center gap-1.5 shadow shadow-blue-500/10 h-7 text-xs px-3 rounded-full">
-              <Navigation className="h-3.5 w-3.5" /> Route Optimized
-            </Badge>
-            <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0 flex items-center gap-1.5 shadow shadow-amber-500/10 h-7 text-xs px-3 rounded-full">
-              <Fuel className="h-3.5 w-3.5" /> Fuel Planned
-            </Badge>
-            <Badge className="bg-purple-500 hover:bg-purple-600 text-white border-0 flex items-center gap-1.5 shadow shadow-purple-500/10 h-7 text-xs px-3 rounded-full">
-              <FileText className="h-3.5 w-3.5" /> Logs Generated
-            </Badge>
-          </div>
-        </div>
+        {/* Dynamic Shared Premium Trip Navigation Header */}
+        <TripNavigationHeader tripId={tripId} activeTab="results" trip={trip} />
 
         {/* Main Two-Column Layout */}
         <div className="grid gap-8 lg:grid-cols-12 items-start">

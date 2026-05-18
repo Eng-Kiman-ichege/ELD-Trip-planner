@@ -10,8 +10,9 @@ interface InteractiveRouteMapProps {
 export function InteractiveRouteMap({ trip, coordinates }: InteractiveRouteMapProps) {
   // Map backend stops to UI StopCoordinate format
   const stops = trip?.stops?.map((s: any) => {
-    let type: "pickup" | "dropoff" | "fuel" | "rest" | "sleep" = "rest";
-    if (s.stop_type === "pickup") type = "pickup";
+    let type: "pickup" | "dropoff" | "fuel" | "rest" | "sleep" | "current" = "rest";
+    if (s.stop_type === "current") type = "current";
+    else if (s.stop_type === "pickup") type = "pickup";
     else if (s.stop_type === "dropoff") type = "dropoff";
     else if (s.stop_type === "fuel") type = "fuel";
     else if (s.stop_type === "break") type = "rest";

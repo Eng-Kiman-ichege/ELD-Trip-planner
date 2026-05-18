@@ -124,7 +124,7 @@ export function LivePreview({ formData }: LivePreviewProps) {
           previewStops.push({
             id: "preview-current",
             name: formData.currentLocation,
-            type: "pickup",
+            type: "current",
             coords: c1,
             time: "Start",
             details: "Dispatch Location"
@@ -175,9 +175,9 @@ export function LivePreview({ formData }: LivePreviewProps) {
 
         const roundedDist = Math.round(totalDist);
         const roundedHrs = Math.round(totalHrs * 10) / 10;
-        const mpg = formData.mpgEstimate || 6.5;
+        const mpg = Number(formData.mpgEstimate) || 6.5;
         const fuelNeededGals = Math.round(totalDist / mpg);
-        const fuelStops = formData.optimizeFuel ? Math.ceil(fuelNeededGals / (formData.fuelCapacity * 0.8 || 120)) : 1;
+        const fuelStops = formData.optimizeFuel ? Math.ceil(fuelNeededGals / (Number(formData.fuelCapacity) * 0.8 || 120)) : 1;
 
         setDistance(roundedDist);
         setHours(roundedHrs);
@@ -191,9 +191,13 @@ export function LivePreview({ formData }: LivePreviewProps) {
 
   const hasRoute = !!(formData.pickupLocation && formData.dropoffLocation);
   
-  const totalDrivingToday = Number((formData.currentDrivingHoursToday + hours).toFixed(1));
-  const totalOnDutyToday = Number((formData.currentOnDutyHoursToday + hours + (hasRoute ? 1.5 : 0)).toFixed(1));
-  const cycleRemaining = Math.max(0, Number((70 - formData.currentCycleUsed - hours).toFixed(1)));
+  const currentDriving = Number(formData.currentDrivingHoursToday) || 0;
+  const currentOnDuty = Number(formData.currentOnDutyHoursToday) || 0;
+  const currentCycle = Number(formData.currentCycleUsed) || 0;
+
+  const totalDrivingToday = Number((currentDriving + hours).toFixed(1));
+  const totalOnDutyToday = Number((currentOnDuty + hours + (hasRoute ? 1.5 : 0)).toFixed(1));
+  const cycleRemaining = Math.max(0, Number((70 - currentCycle - hours).toFixed(1)));
   
   const isViolation = (totalDrivingToday > 11 || totalOnDutyToday > 14) && !formData.autoHOS;
   const isWarning = cycleRemaining < 10;

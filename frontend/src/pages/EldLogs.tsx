@@ -9,6 +9,7 @@ import {
   ShieldCheck, FileText, CheckCircle2, ChevronRight, Download, 
   Printer, Share2, Clock, AlertCircle, Calendar, Navigation, Loader2
 } from "lucide-react"
+import { TripNavigationHeader } from "../components/shared/TripNavigationHeader"
 
 // Map backend duty_status values to short labels
 const STATUS_LABEL: Record<string, "OFF" | "SB" | "D" | "ON"> = {
@@ -69,6 +70,7 @@ export function EldLogs() {
   const { id } = useParams<{ id: string }>()
 
   const [logs, setLogs] = useState<any[]>([])
+  const [trip, setTrip] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeDay, setActiveDay] = useState(1)
@@ -79,8 +81,12 @@ export function EldLogs() {
     async function fetchLogs() {
       try {
         setIsLoading(true)
-        const data = await api.trips.getLogs(id!)
-        setLogs(data)
+        const [logsData, tripData] = await Promise.all([
+          api.trips.getLogs(id!),
+          api.trips.get(id!)
+        ])
+        setLogs(logsData)
+        setTrip(tripData)
       } catch (err: any) {
         setError(err.message || "Failed to load ELD logs.")
       } finally {
@@ -126,63 +132,8 @@ export function EldLogs() {
     <PageContainer className="bg-slate-50 dark:bg-slate-950">
       <div className="container relative mx-auto px-4 md:px-6 space-y-10">
         
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(`/trip/${id}`)} 
-            className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer focus:outline-none"
-          >
-            Trip Results
-          </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700" />
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-650">ELD Compliance Logs</span>
-        </div>
-
-        {/* A. Header Section */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-[800px]">
-            <Badge className="bg-blue-600/90 text-white border-0 flex items-center gap-1.5 h-6 text-[10px] uppercase font-bold tracking-wider px-3 rounded-full w-fit">
-              <ShieldCheck className="h-3.5 w-3.5" /> FMCSA Certified
-            </Badge>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-slate-50">
-              Driver ELD Logs &amp; Duty Status
-            </h1>
-            <p className="text-base text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
-              Review generated DOT-compliant driver logs and duty status breakdowns.
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-2.5">
-            <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 flex items-center gap-1.5 shadow h-7 text-xs px-3 rounded-full">
-              <ShieldCheck className="h-3.5 w-3.5" /> HOS Compliant
-            </Badge>
-            <Badge className="bg-blue-500 hover:bg-blue-600 text-white border-0 flex items-center gap-1.5 shadow h-7 text-xs px-3 rounded-full">
-              <FileText className="h-3.5 w-3.5" /> {logs.length} Log Entries
-            </Badge>
-            <Badge className="bg-purple-500 hover:bg-purple-600 text-white border-0 flex items-center gap-1.5 shadow h-7 text-xs px-3 rounded-full">
-              <CheckCircle2 className="h-3.5 w-3.5" /> DOT Ready
-            </Badge>
-          </div>
-        </div>
-
-        {/* Quick Nav */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="h-9 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900" onClick={() => navigate(`/trip/${id}`)}>
-              Back To Results
-            </Button>
-            <Button variant="outline" className="h-9 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900" onClick={() => navigate(`/trip/${id}/stops`)}>
-              View Stops Timeline
-            </Button>
-            <Button variant="outline" className="h-9 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900" onClick={() => navigate("/dashboard")}>
-              Open Dashboard
-            </Button>
-          </div>
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-950 p-1.5 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <Calendar className="h-4 w-4 text-blue-500" />
-            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Trip #{id} — {totalDays} Day{totalDays > 1 ? "s" : ""}</span>
-          </div>
-        </div>
+        {/* Dynamic Shared Premium Trip Navigation Header */}
+        <TripNavigationHeader tripId={id!} activeTab="logs" trip={trip} />
 
         {/* Error banner */}
         {error && (
@@ -192,23 +143,29 @@ export function EldLogs() {
         )}
 
         {/* B. Daily Log Tabs */}
-        <div className="flex justify-center sm:justify-start gap-1 bg-slate-200/50 dark:bg-slate-900/50 p-1 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl w-fit">
-          {dayNumbers.map((day) => (
-            <button
-              key={day}
-              onClick={() => setActiveDay(day)}
-              className={`h-10 px-5 text-xs font-bold rounded-xl cursor-pointer transition-all ${
-                activeDay === day 
-                  ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-blue-400 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-              }`}
-            >
-              Day {day}
-            </button>
-          ))}
-          {dayNumbers.length === 0 && (
-            <span className="h-10 px-5 text-xs font-bold text-slate-400 flex items-center">No logs found</span>
-          )}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-850 pb-4 pt-2">
+          <div className="flex justify-center sm:justify-start gap-1 bg-slate-250/50 dark:bg-slate-900/50 p-1 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl w-fit">
+            {dayNumbers.map((day) => (
+              <button
+                key={day}
+                onClick={() => setActiveDay(day)}
+                className={`h-10 px-5 text-xs font-bold rounded-xl cursor-pointer transition-all ${
+                  activeDay === day 
+                    ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-blue-400 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                }`}
+              >
+                Day {day}
+              </button>
+            ))}
+            {dayNumbers.length === 0 && (
+              <span className="h-10 px-5 text-xs font-bold text-slate-400 flex items-center">No logs found</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-950 p-1.5 border border-slate-200 dark:border-slate-800 rounded-xl shrink-0 h-10 px-4">
+            <Calendar className="h-4 w-4 text-blue-500" />
+            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Total Dispatch: {totalDays} Day{totalDays > 1 ? "s" : ""}</span>
+          </div>
         </div>
 
         {/* C. ELD Log Graph Section */}

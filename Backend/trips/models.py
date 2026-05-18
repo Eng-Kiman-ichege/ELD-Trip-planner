@@ -29,6 +29,7 @@ class Trip(models.Model):
 
 class Stop(models.Model):
     STOP_TYPES = [
+        ("current", "Current Location"),
         ("pickup", "Pickup Location"),
         ("dropoff", "Dropoff Location"),
         ("fuel", "Fuel Stop"),

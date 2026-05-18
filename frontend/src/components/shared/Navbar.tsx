@@ -19,9 +19,6 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
   const navLinks = [
     { to: "/dashboard", label: "Dashboard" },
     { to: "/planner", label: "Planner" },
-    { to: "/trip/1", label: "Trip Results", end: true },
-    { to: "/trip/1/logs", label: "Logs" },
-    { to: "/trip/1/stops", label: "Stops Timeline" },
     { to: "/about", label: "About" },
   ]
 

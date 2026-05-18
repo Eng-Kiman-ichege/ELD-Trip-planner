@@ -151,55 +151,7 @@ export function About() {
           </div>
         </div>
 
-        {/* D. Technology Stack Section */}
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">RouteELD Technology Stack</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-450 font-bold uppercase tracking-wider">Premium SaaS engineering stack</p>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-            <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-xl flex items-center gap-4 hover:scale-[1.02] transition-transform shadow-sm">
-              <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg flex items-center justify-center shrink-0">
-                <Globe className="h-5 w-5" />
-              </div>
-              <div>
-                <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">React & Vite</h5>
-                <p className="text-[10px] text-slate-400 font-bold">Fast Frontend Interface</p>
-              </div>
-            </Card>
-
-            <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-xl flex items-center gap-4 hover:scale-[1.02] transition-transform shadow-sm">
-              <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Tailwind CSS v4</h5>
-                <p className="text-[10px] text-slate-400 font-bold">CSS-First Class Design</p>
-              </div>
-            </Card>
-
-            <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-xl flex items-center gap-4 hover:scale-[1.02] transition-transform shadow-sm">
-              <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-lg flex items-center justify-center shrink-0">
-                <Map className="h-5 w-5" />
-              </div>
-              <div>
-                <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">OpenStreetMap</h5>
-                <p className="text-[10px] text-slate-400 font-bold">React Leaflet maps</p>
-              </div>
-            </Card>
-
-            <Card className="border border-slate-200/50 bg-white/70 dark:border-slate-800/50 dark:bg-slate-950/70 p-5 rounded-xl flex items-center gap-4 hover:scale-[1.02] transition-transform shadow-sm">
-              <div className="h-10 w-10 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-lg flex items-center justify-center shrink-0">
-                <Database className="h-5 w-5" />
-              </div>
-              <div>
-                <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Django & Postgres</h5>
-                <p className="text-[10px] text-slate-400 font-bold">Secure Core Database</p>
-              </div>
-            </Card>
-          </div>
-        </div>
 
         {/* E. How Route Calculations Work */}
         <div className="space-y-6">
