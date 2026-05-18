@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: eld-backend
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn back.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eld-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: OPENROUTESERVICE_API_KEY
+        sync: false
+
+databases:
+  - name: eld-db
+    plan: free
