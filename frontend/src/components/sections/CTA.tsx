@@ -1,7 +1,11 @@
 import { motion } from "framer-motion"
 import { Button } from "../ui/button"
 
-export function CTA() {
+interface CTAProps {
+  onNavigatePlanner: () => void;
+}
+
+export function CTA({ onNavigatePlanner }: CTAProps) {
   return (
     <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-blue-500/5 dark:bg-blue-900/10"></div>
@@ -20,7 +24,7 @@ export function CTA() {
             Ensure your trips are optimal, profitable, and 100% HOS compliant. Start for free.
           </p>
           <div className="flex justify-center">
-            <Button size="lg" className="h-12 px-10 text-base">
+            <Button size="lg" className="h-12 px-10 text-base" onClick={onNavigatePlanner}>
               Generate Trip Plan
             </Button>
           </div>

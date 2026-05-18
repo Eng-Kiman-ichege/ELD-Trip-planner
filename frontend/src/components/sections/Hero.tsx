@@ -4,7 +4,11 @@ import { Badge } from "../ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Map, Clock, Fuel, ShieldCheck, Play } from "lucide-react"
 
-export function Hero() {
+interface HeroProps {
+  onNavigatePlanner: () => void;
+}
+
+export function Hero({ onNavigatePlanner }: HeroProps) {
   return (
     <section className="relative overflow-hidden bg-slate-50 pt-16 md:pt-24 lg:pt-32 dark:bg-slate-950">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -31,7 +35,7 @@ export function Hero() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="h-12 px-8">Start Trip Planning</Button>
+              <Button size="lg" className="h-12 px-8" onClick={onNavigatePlanner}>Start Trip Planning</Button>
               <Button size="lg" variant="outline" className="h-12 px-8">
                 <Play className="mr-2 h-4 w-4" /> View Demo
               </Button>
