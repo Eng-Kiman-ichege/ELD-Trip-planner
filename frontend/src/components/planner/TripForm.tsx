@@ -6,8 +6,30 @@ import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { MapPin, Truck, Sliders, Settings, Calendar, Loader2 } from "lucide-react"
 
-// Autocomplete recommendations
-const cities = ["Dallas, TX", "Houston, TX", "Miami, FL", "Atlanta, GA", "Chicago, IL", "Orlando, FL", "New York, NY", "Los Angeles, CA"]
+// Autocomplete recommendations for US states, regions, and major cities
+const cities = [
+  // Major Logistics Cities
+  "Dallas, TX", "Houston, TX", "Miami, FL", "Atlanta, GA", "Chicago, IL", 
+  "Orlando, FL", "New York, NY", "Los Angeles, CA", "Seattle, WA", "Denver, CO", 
+  "Boston, MA", "San Francisco, CA", "Phoenix, AZ", "Philadelphia, PA", "San Antonio, TX",
+  "San Diego, CA", "Detroit, MI", "Charlotte, NC", "Indianapolis, IN", "Columbus, OH",
+  "Memphis, TN", "Nashville, TN", "Kansas City, MO", "St. Louis, MO", "Minneapolis, MN",
+  "Salt Lake City, UT", "Las Vegas, NV", "Portland, OR", "Pittsburgh, PA", "Cleveland, OH",
+  // All 50 US States & Regions
+  "Alabama (AL)", "Alaska (AK)", "Arizona (AZ)", "Arkansas (AR)", "California (CA)",
+  "Colorado (CO)", "Connecticut (CT)", "Delaware (DE)", "Florida (FL)", "Georgia (GA)",
+  "Hawaii (HI)", "Idaho (ID)", "Illinois (IL)", "Indiana (IN)", "Iowa (IA)",
+  "Kansas (KS)", "Kentucky (KY)", "Louisiana (LA)", "Maine (ME)", "Maryland (MD)",
+  "Massachusetts (MA)", "Michigan (MI)", "Minnesota (MN)", "Mississippi (MS)", "Missouri (MO)",
+  "Montana (MT)", "Nebraska (NE)", "Nevada (NV)", "New Hampshire (NH)", "New Jersey (NJ)",
+  "New Mexico (NM)", "New York (NY)", "North Carolina (NC)", "North Dakota (ND)", "Ohio (OH)",
+  "Oklahoma (OK)", "Oregon (OR)", "Pennsylvania (PA)", "Rhode Island (RI)", "South Carolina (SC)",
+  "South Dakota (SD)", "Tennessee (TN)", "Texas (TX)", "Utah (UT)", "Vermont (VT)",
+  "Virginia (VA)", "Washington (WA)", "West Virginia (WV)", "Wisconsin (WI)", "Wyoming (WY)",
+  // US Regional Logistics Hubs
+  "Northeast Region", "Southeast Region", "Midwest Region", "Southwest Region", 
+  "Rocky Mountain Region", "Pacific Northwest", "West Coast Hub", "Gulf Coast Logistics Hub"
+]
 
 export const tripSchema = z.object({
   currentLocation: z.string().min(2, "Current location must be at least 2 characters"),
