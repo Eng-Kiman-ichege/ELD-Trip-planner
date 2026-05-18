@@ -1,8 +1,7 @@
 import { useState } from "react"
-import { motion } from "framer-motion"
 import { 
   ShieldCheck, CheckCircle2, Navigation, Fuel, Sparkles, MapPin, 
-  Clock, Calendar, AlertTriangle, AlertCircle, Info, ArrowLeft, 
+  Clock, Calendar, AlertTriangle, AlertCircle, Info, 
   Download, Printer, Share2, FileText, ChevronRight
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
@@ -45,10 +44,17 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
         {/* Breadcrumb / Back button */}
         <div className="flex items-center gap-3">
           <button 
+            onClick={onNavigateHome} 
+            className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer focus:outline-none"
+          >
+            Dashboard
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700" />
+          <button 
             onClick={onNavigatePlanner} 
             className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer focus:outline-none"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to Planner
+            Planner
           </button>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700" />
           <span className="text-xs font-bold text-slate-400 dark:text-slate-650">Optimized Trip Details</span>
@@ -281,7 +287,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
           <div className="flex items-center justify-between gap-4 flex-wrap border-b border-slate-200 dark:border-slate-800 pb-3">
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Chronological Dispatch Stop Sequence</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Sequence of checkpoints, fuels and sleep stops</p>
+              <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold">Sequence of checkpoints, fuels and sleep stops</p>
             </div>
             <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-bold">
               6 checkpoints verified
@@ -295,7 +301,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
         <div className="space-y-6 pt-6">
           <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Daily Log Breakdown</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Expand daily schedules for detailed duty segments</p>
+            <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold">Expand daily schedules for detailed duty segments</p>
           </div>
           
           <DailyBreakdown />
@@ -305,7 +311,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
         <div className="space-y-6 pt-6">
           <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Optimal Performance Scores</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Route efficiency metrics compared to benchmark baselines</p>
+            <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold">Route efficiency metrics compared to benchmark baselines</p>
           </div>
           
           <PerformanceMetrics />
@@ -315,7 +321,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
         <div className="space-y-6 pt-6">
           <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Logistics Alerts & Bulletins</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Real-time alerts that may impact trip logistics</p>
+            <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold">Real-time alerts that may impact trip logistics</p>
           </div>
           
           <div className="grid gap-4 sm:grid-cols-2">
@@ -323,7 +329,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
               <CardContent className="p-5 flex gap-4">
                 <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
                 <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Congestion Warning near Orlando, FL</h4>
+                  <h4 className="text-sm font-extrabold text-slate-805 dark:text-slate-100">Congestion Warning near Orlando, FL</h4>
                   <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed font-semibold">
                     Construction work on I-4 East is causing delays up to 25 minutes. Alternate truck route via FL-429 toll bypass recommended if delivery schedule tightens.
                   </p>
@@ -335,7 +341,7 @@ export function ResultsDashboard({ onNavigatePlanner, onNavigateHome }: ResultsD
               <CardContent className="p-5 flex gap-4">
                 <AlertCircle className="h-6 w-6 text-red-500 shrink-0" />
                 <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Mandatory 30-min break warning</h4>
+                  <h4 className="text-sm font-extrabold text-slate-808 dark:text-slate-100">Mandatory 30-min break warning</h4>
                   <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed font-semibold">
                     Driver cycle tracking shows maximum 8 hours continuous driving approaching fast near Birmingham. Planner has auto-scheduled a 30-min rest stop. Do not bypass.
                   </p>
