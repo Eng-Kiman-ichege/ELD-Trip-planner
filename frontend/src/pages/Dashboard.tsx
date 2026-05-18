@@ -5,10 +5,10 @@ import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  AreaChart, Area, CartesianGrid, LineChart, Line 
+  CartesianGrid, LineChart, Line 
 } from "recharts"
 import { 
-  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar 
+  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar, PlusCircle 
 } from "lucide-react"
 
 // Analytics dashboard charts data

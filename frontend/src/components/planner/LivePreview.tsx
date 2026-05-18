@@ -88,28 +88,21 @@ export function LivePreview({ formData }: LivePreviewProps) {
       <CardContent className="p-6 space-y-6">
         {/* Route Details Map Mockup */}
         <div className="relative h-48 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/30">
-          <div className="absolute inset-0 opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNFMkU4RjAiLz48L3N2Zz4=')] dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiMzMzQxNTUiLz48L3N2Zz4=')]"></div>
-          
           {hasRoute ? (
-            <>
-              {/* Active Route Draw */}
-              <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
-                <path d="M 60 140 C 120 40, 280 180, 420 60" fill="none" stroke="#3b82f6" strokeWidth="4" className="drop-shadow-lg" strokeDasharray="6 6" />
-                <circle cx="60" cy="140" r="7" className="fill-blue-600 animate-pulse" />
-                <circle cx="420" cy="60" r="7" className="fill-red-500 animate-pulse" />
-              </svg>
-              <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm p-2 rounded-lg text-xs font-semibold shadow border border-slate-200/20">
+            <div className="h-full w-full relative">
+              <RouteMap height="100%" zoomLevel={4} />
+              <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm p-2 rounded-lg text-xs font-bold shadow border border-slate-200/20 z-20">
                 <span className="text-slate-500">Route active:</span> {formData.pickupLocation || "Origin"} → {formData.dropoffLocation || "Destination"}
               </div>
-            </>
+            </div>
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-4 text-center">
-              <Navigation className="h-8 w-8 mb-2 animate-bounce" />
-              <p className="text-sm font-semibold">Enter Pickup and Dropoff locations</p>
-              <p className="text-xs">Live map preview will generate automatically</p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-650 p-4 text-center z-10">
+              <Navigation className="h-8 w-8 mb-2 animate-bounce text-blue-500" />
+              <p className="text-sm font-extrabold text-slate-700 dark:text-slate-350">Enter Pickup and Dropoff locations</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1">Live map preview will generate automatically</p>
             </div>
           )}
-        </div>
+        </div>v>
 
         {/* Animated Metrics */}
         <div className="grid grid-cols-2 gap-4">
