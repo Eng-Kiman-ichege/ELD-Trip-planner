@@ -4,7 +4,7 @@ import { PageContainer } from "../layouts/PageContainer"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { api } from "../lib/api"
-import { ShieldCheck, Truck, KeyRound, Mail, Loader2, AlertCircle, Building2, CheckCircle2 } from "lucide-react"
+import { Truck, KeyRound, Mail, Loader2, AlertCircle, Building2, CheckCircle2 } from "lucide-react"
 
 type Mode = "login" | "signup"
 
@@ -73,25 +73,7 @@ export function Login() {
     }
   }
 
-  const handleAuditorBypass = async () => {
-    setIsLoading(true); setError(null)
-    try {
-      await api.auth.login("safety_auditor@routeeld.com", "SecurePassword123")
-      navigate("/dashboard")
-      window.location.reload()
-    } catch {
-      // Fallback: try username-based login for the seeded account
-      try {
-        await api.auth.login("safety_auditor", "SecurePassword123")
-        navigate("/dashboard")
-        window.location.reload()
-      } catch (err: any) {
-        setError("One-click login failed. Ensure the Django server is running and the seed account exists.")
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }
+
 
   return (
     <PageContainer className="bg-slate-50 dark:bg-slate-950 flex items-center justify-center min-h-[calc(100vh-16rem)] py-12">
@@ -211,23 +193,7 @@ export function Login() {
                   {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing In...</> : "Sign In"}
                 </Button>
 
-                {/* Divider */}
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-                  <span className="flex-shrink mx-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Quick Access</span>
-                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-                </div>
 
-                {/* One-click auditor bypass */}
-                <button
-                  type="button"
-                  onClick={handleAuditorBypass}
-                  disabled={isLoading}
-                  className="w-full h-11 bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl transition-all shadow shadow-emerald-500/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Auditor One-Click Login
-                </button>
                 <p className="text-[10px] text-center text-slate-400 font-semibold">
                   No account yet?{" "}
                   <button type="button" onClick={() => switchMode("signup")} className="text-blue-500 hover:underline font-bold cursor-pointer">
