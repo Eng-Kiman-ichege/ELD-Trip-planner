@@ -85,7 +85,7 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
               {/* User profile avatar */}
               <div 
                 onClick={() => navigate("/dashboard")}
-                title={`Logged in as ${api.auth.getUsername()}`}
+                title={`Logged in as ${api.auth.getUserEmail()}`}
                 className="hidden sm:flex h-10 w-10 border border-slate-200 dark:border-slate-800 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl items-center justify-center text-xs font-bold text-white shadow shadow-indigo-500/10 cursor-pointer"
               >
                 {api.auth.getUserInitials()}
@@ -156,7 +156,7 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
                       window.location.reload();
                     }}
                   >
-                    Sign Out ({api.auth.getUsername()})
+                    Sign Out ({api.auth.getUserEmail()})
                   </Button>
                   <Button 
                     className="w-full h-11 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700"

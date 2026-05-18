@@ -49,18 +49,30 @@ export function Dashboard() {
       }))
     : [
         { week: "Trip 1", miles: 0, fuel: 0 },
-        { week: "Trip 2", miles: 0, fuel: 0 }
+        { week: "Trip 2", miles: 0, fuel: 0 },
+        { week: "Trip 3", miles: 0, fuel: 0 },
+        { week: "Trip 4", miles: 0, fuel: 0 }
       ]
 
-  const complianceTrendData = [
-    { day: "Mon", score: 100 },
-    { day: "Tue", score: 100 },
-    { day: "Wed", score: 100 },
-    { day: "Thu", score: 100 },
-    { day: "Fri", score: 100 },
-    { day: "Sat", score: 100 },
-    { day: "Sun", score: 100 }
-  ]
+  const complianceTrendData = trips.length > 0 
+    ? [
+        { day: "Mon", score: 100 },
+        { day: "Tue", score: 100 },
+        { day: "Wed", score: 100 },
+        { day: "Thu", score: 100 },
+        { day: "Fri", score: 100 },
+        { day: "Sat", score: 100 },
+        { day: "Sun", score: 100 }
+      ]
+    : [
+        { day: "Mon", score: 0 },
+        { day: "Tue", score: 0 },
+        { day: "Wed", score: 0 },
+        { day: "Thu", score: 0 },
+        { day: "Fri", score: 0 },
+        { day: "Sat", score: 0 },
+        { day: "Sun", score: 0 }
+      ]
 
   if (isLoading) {
     return (
@@ -81,7 +93,7 @@ export function Dashboard() {
     fuelStops: analytics?.fuel_stops_planned ?? 0,
     restStops: analytics?.rest_stops_planned ?? 0,
     activeSchedules: analytics?.active_schedules ?? 0,
-    complianceRating: analytics?.compliance_rating ?? 100.0,
+    complianceRating: (analytics?.total_trips ?? 0) > 0 ? (analytics?.compliance_rating ?? 100.0) : 0,
     alerts: analytics?.alerts ?? []
   }
 
