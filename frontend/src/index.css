@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -8,4 +9,37 @@
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Elegant dark mode maps filter styling for OpenStreetMap tiles */
+.dark .map-tile-layer {
+  filter: invert(96%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
+}
+
+/* Premium dark theme customizations for Leaflet containers */
+.dark .leaflet-container {
+  background: #020617 !important;
+}
+
+.dark .leaflet-bar {
+  border: 1px solid #1e293b !important;
+}
+
+.dark .leaflet-bar a {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.dark .leaflet-bar a:hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3) !important;
 }
