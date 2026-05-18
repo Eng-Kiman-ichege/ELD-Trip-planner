@@ -39,9 +39,10 @@ const initialInsights: Insight[] = [
 
 interface TripPlannerProps {
   onNavigateHome: () => void;
+  onNavigateResults: () => void;
 }
 
-export function TripPlanner({ onNavigateHome }: TripPlannerProps) {
+export function TripPlanner({ onNavigateHome, onNavigateResults }: TripPlannerProps) {
   const [formData, setFormData] = useState<TripFormData | null>(null)
   const [stops, setStops] = useState<Stop[]>(initialStops)
   const [rules, setRules] = useState<RuleStatus[]>(initialRules)
@@ -80,10 +81,13 @@ export function TripPlanner({ onNavigateHome }: TripPlannerProps) {
     setStops(updatedStops)
     setRules(updatedRules)
     setInsights(updatedInsights)
+    
+    // Jump straight to Results page showing full charts and interactive maps
+    onNavigateResults()
   }
 
   return (
-    <div className="relative overflow-hidden bg-slate-50 min-h-screen py-12 dark:bg-slate-950">
+    <div className="relative overflow-hidden bg-slate-50 min-h-screen py-12 dark:bg-slate-950 transition-colors duration-300">
       {/* Background Grids */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
       
@@ -105,7 +109,7 @@ export function TripPlanner({ onNavigateHome }: TripPlannerProps) {
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-slate-50">
               Plan Your Next Trucking Route
             </h1>
-            <p className="text-base text-slate-600 dark:text-slate-400">
+            <p className="text-base text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
               Generate optimized routes, compliant driving schedules, rest breaks, fuel stops, and ELD logs instantly.
             </p>
           </div>
