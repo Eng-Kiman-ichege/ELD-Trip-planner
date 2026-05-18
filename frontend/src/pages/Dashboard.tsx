@@ -8,8 +8,7 @@ import {
   AreaChart, Area, CartesianGrid, LineChart, Line 
 } from "recharts"
 import { 
-  ShieldCheck, AlertTriangle, AlertCircle, Info, Calendar, MapPin, 
-  Clock, Route, PlusCircle, CheckCircle2, ChevronRight, Eye, Navigation, Fuel 
+  ShieldCheck, Route, Eye, Navigation, Fuel, AlertCircle, AlertTriangle, Calendar 
 } from "lucide-react"
 
 // Analytics dashboard charts data
