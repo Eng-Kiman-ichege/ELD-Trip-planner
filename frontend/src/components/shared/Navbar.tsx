@@ -16,7 +16,7 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
-  const navLinks = [
+  const navLinks: { to: string; label: string; end?: boolean }[] = [
     { to: "/dashboard", label: "Dashboard" },
     { to: "/planner", label: "Planner" },
     { to: "/about", label: "About" },
