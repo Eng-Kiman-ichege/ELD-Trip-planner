@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import { Badge } from "../ui/badge"
-import { Map, Clock, Fuel, ShieldAlert, Navigation, Calendar } from "lucide-react"
+import { Clock, Fuel, ShieldAlert, Navigation, Calendar } from "lucide-react"
 
 interface LivePreviewProps {
   formData: {

@@ -64,11 +64,10 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
     reset,
     formState: { errors },
-  } = useForm<TripFormData>({
+  } = useForm<any>({
     resolver: zodResolver(tripSchema),
     defaultValues,
   })
@@ -79,12 +78,12 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
     onChange(watchedValues)
   }, [JSON.stringify(watchedValues)])
 
-  const handleFormSubmit = async (data: TripFormData) => {
+  const handleFormSubmit = async (data: any) => {
     setIsLoading(true)
     // Simulate API request calculation
     await new Promise((resolve) => setTimeout(resolve, 1500))
     setIsLoading(false)
-    onSubmit(data)
+    onSubmit(data as TripFormData)
   }
 
   return (
@@ -107,7 +106,7 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
                 className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 list="cities"
               />
-              {errors.currentLocation && <p className="text-[10px] text-red-500 font-semibold">{errors.currentLocation.message}</p>}
+              {errors.currentLocation && <p className="text-[10px] text-red-500 font-semibold">{errors.currentLocation.message as string}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -118,7 +117,7 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
                 className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 list="cities"
               />
-              {errors.pickupLocation && <p className="text-[10px] text-red-500 font-semibold">{errors.pickupLocation.message}</p>}
+              {errors.pickupLocation && <p className="text-[10px] text-red-500 font-semibold">{errors.pickupLocation.message as string}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -129,7 +128,7 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
                 className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 list="cities"
               />
-              {errors.dropoffLocation && <p className="text-[10px] text-red-500 font-semibold">{errors.dropoffLocation.message}</p>}
+              {errors.dropoffLocation && <p className="text-[10px] text-red-500 font-semibold">{errors.dropoffLocation.message as string}</p>}
             </div>
           </div>
           
@@ -151,7 +150,7 @@ export function TripForm({ onSubmit, onChange }: TripFormProps) {
             <div className="space-y-1">
               <div className="flex justify-between text-xs font-bold text-slate-500">
                 <span className="uppercase tracking-wider">Current Cycle Used (Hours)</span>
-                <span className="text-slate-800 dark:text-slate-200 font-mono">{watchedValues.currentCycleUsed} / 70 hrs</span>
+                <span className="text-slate-800 dark:text-slate-200 font-mono">{watchedValues?.currentCycleUsed} / 70 hrs</span>
               </div>
               <input
                 type="range"
