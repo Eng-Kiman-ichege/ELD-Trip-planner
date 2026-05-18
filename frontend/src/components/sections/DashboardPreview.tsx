@@ -1,7 +1,7 @@
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import { Badge } from "../ui/badge"
-import { LayoutDashboard, Route, Clock, FileText, ChevronRight, User } from "lucide-react"
+import { LayoutDashboard, ChevronRight } from "lucide-react"
 
 export function DashboardPreview() {
   return (
